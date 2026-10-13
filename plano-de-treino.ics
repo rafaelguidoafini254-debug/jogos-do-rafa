@@ -1,0 +1,130 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Plano de treino//Corrida e Futevolei//PT
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:Plano de Treino
+X-WR-TIMEZONE:America/Sao_Paulo
+BEGIN:VEVENT
+UID:treino-qui@plano-leonardo
+DTSTAMP:20260923T120000Z
+DTSTART:20260924T070000
+DTEND:20260924T073500
+RRULE:FREQ=WEEKLY
+SUMMARY:Recuperacao ativa - caminhada
+DESCRIPTION:RECUPERACAO ATIVA\n\n25 min caminhada @ 5\,0-5\,5 km/h\, sem 
+ inclinacao\nAlvo: FC abaixo de 120\n\n10 min mobilidade: tornozelo\, pan
+ turrilha\, adutores\, lombar\n\nSe passar de 120 bpm voce esta andando r
+ apido demais e o dia deixa de ser recuperacao.
+BEGIN:VALARM
+TRIGGER:-PT30M
+ACTION:DISPLAY
+DESCRIPTION:Treino em 30 minutos
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:treino-sex@plano-leonardo
+DTSTAMP:20260923T120000Z
+DTSTART:20260925T070000
+DTEND:20260925T074200
+RRULE:FREQ=WEEKLY
+SUMMARY:Corrida base 2 + Bloco B
+DESCRIPTION:CORRIDA - BASE 2\n\n5 min @ 5\,0 km/h (aquecimento)\n22 min @
+  6\,5 km/h\n5 min @ 5\,0 km/h (desaquecimento)\n\nTeto de FC: 165. Se pa
+ ssar\, baixe a velocidade.\n\nBloco B (quadril e panturrilha):\n- Ponte 
+ de gluteo 3x15\n- Abducao deitado de lado 3x15 cada\n- Elevacao de pantu
+ rrilha 3x15 (sobe 1s\, desce 3s)
+BEGIN:VALARM
+TRIGGER:-PT30M
+ACTION:DISPLAY
+DESCRIPTION:Treino em 30 minutos
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:treino-sab@plano-leonardo
+DTSTAMP:20260923T120000Z
+DTSTART:20260926T070000
+DTEND:20260926T073000
+RRULE:FREQ=WEEKLY
+SUMMARY:Caminhada inclinada + Bloco A
+DESCRIPTION:CAMINHADA INCLINADA\n\n20 min @ 5\,0 km/h\, inclinacao 6-8%\n
+ A FC deve subir para 140-150 andando.\n\nSe a panturrilha estiver dolori
+ da da sexta: baixe para 4% ou deixe plano.\n\nBloco A (abdomen):\n- Pran
+ cha frontal 3x30s\n- Prancha lateral 3x20s cada lado\n- Abdominal comum 
+ 3x15\n- Superman 3x12
+BEGIN:VALARM
+TRIGGER:-PT30M
+ACTION:DISPLAY
+DESCRIPTION:Treino em 30 minutos
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:treino-dom@plano-leonardo
+DTSTAMP:20260923T120000Z
+DTSTART:20260927T070000
+DTEND:20260927T074500
+RRULE:FREQ=WEEKLY
+SUMMARY:Longao + Bloco B
+DESCRIPTION:CORRIDA LONGA\n\n5 min @ 5\,0 km/h (aquecimento)\n25 min @ 6\
+ ,5 km/h\n5 min @ 5\,0 km/h (desaquecimento)\n\nTeto de FC: 165.\nEste e 
+ o treino mais longo da semana - nao acelere.\n\nBloco B (quadril e pantu
+ rrilha):\n- Ponte de gluteo 3x15\n- Abducao deitado de lado 3x15 cada\n-
+  Elevacao de panturrilha 3x15 (sobe 1s\, desce 3s)
+BEGIN:VALARM
+TRIGGER:-PT30M
+ACTION:DISPLAY
+DESCRIPTION:Treino em 30 minutos
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:treino-seg@plano-leonardo
+DTSTAMP:20260923T120000Z
+DTSTART:20260928T190000
+DTEND:20260928T201000
+RRULE:FREQ=WEEKLY
+SUMMARY:Futevolei (leve) + mobilidade
+DESCRIPTION:FUTEVOLEI - 1h\n\nO mais leve dos dois da semana.\nVoce vem d
+ o longao de domingo\, entao pegue leve.\n\n+ 10 min de mobilidade depois
+ : tornozelo\, panturrilha\, adutores\, lombar.
+BEGIN:VALARM
+TRIGGER:-PT30M
+ACTION:DISPLAY
+DESCRIPTION:Treino em 30 minutos
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:treino-ter@plano-leonardo
+DTSTAMP:20260923T120000Z
+DTSTART:20260929T070000
+DTEND:20260929T074500
+RRULE:FREQ=WEEKLY
+SUMMARY:Corrida base 1 + Bloco A
+DESCRIPTION:CORRIDA - BASE 1\n\n5 min @ 5\,0 km/h (aquecimento)\n20 min @
+  6\,2-6\,5 km/h\n5 min @ 5\,0 km/h (desaquecimento)\n\nEsta e a corrida 
+ mais leve da semana\, de proposito: fica entre dois dias de futevolei.\n
+ Teto de FC: 165.\n\nBloco A (abdomen):\n- Prancha frontal 3x30s\n- Pranc
+ ha lateral 3x20s cada lado\n- Abdominal comum 3x15\n- Superman 3x12\n- E
+ levacao de panturrilha 3x15
+BEGIN:VALARM
+TRIGGER:-PT30M
+ACTION:DISPLAY
+DESCRIPTION:Treino em 30 minutos
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:treino-qua@plano-leonardo
+DTSTAMP:20260923T120000Z
+DTSTART:20260930T190000
+DTEND:20260930T201000
+RRULE:FREQ=WEEKLY
+SUMMARY:Futevolei FORTE + mobilidade
+DESCRIPTION:FUTEVOLEI - 1h - DIA MAIS FORTE DA SEMANA\n\nE o pico de carg
+ a da semana. Amanha e recuperacao ativa de proposito.\n\n+ 10 min de mob
+ ilidade depois: tornozelo\, panturrilha\, adutores\, lombar.
+BEGIN:VALARM
+TRIGGER:-PT30M
+ACTION:DISPLAY
+DESCRIPTION:Treino em 30 minutos
+END:VALARM
+END:VEVENT
+END:VCALENDAR

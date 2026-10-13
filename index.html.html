@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#090a0f">
+<title>Imposter — Jogo do Tempo</title>
+<style>
+:root{--bg:#090a0f;--panel:#141620;--panel2:#1b1e2a;--text:#f7f7fb;--muted:#a7a9b8;--accent:#7c5cff;--accent2:#23d5c4;--danger:#ff5678}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#202039 0%,#0b0c12 48%,#07080c 100%);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}
+button,input{font:inherit}button{cursor:pointer;border:0;border-radius:16px;padding:14px 17px;font-weight:750;color:white;background:var(--accent);transition:transform .12s,opacity .12s}button:active{transform:scale(.98)}button:disabled{opacity:.4;cursor:not-allowed}.secondary{background:#292c3b}.ghost{background:transparent;border:1px solid #393c4e}.danger{background:#4a2331;color:#ffdbe3}.wrap{max-width:600px;margin:0 auto;padding:22px 17px 40px}.top{display:flex;align-items:center;gap:12px;margin:12px 0 26px}.logo{width:52px;height:52px;border-radius:17px;background:linear-gradient(145deg,#8c71ff,#5136ce);display:grid;place-items:center;font-size:27px;box-shadow:0 8px 28px #6e4dff40}.brand{font-weight:900;font-size:22px;letter-spacing:-.5px}.sub{color:var(--muted);font-size:13px;margin-top:3px}.pill{margin-left:auto;font-size:11px;color:#b8b0ff;border:1px solid #51458c;border-radius:99px;padding:7px 10px}.screen{display:none}.screen.active{display:block}.hero{text-align:center;padding:24px 8px 28px}.finger{font-size:56px;margin-bottom:8px}.hero h1{font-size:35px;line-height:1.03;letter-spacing:-1.2px;margin:0 0 12px}.hero p{color:var(--muted);line-height:1.5;margin:0 auto;max-width:360px}.cards{display:grid;gap:13px}.mode{display:flex;align-items:center;text-align:left;gap:15px;padding:18px;background:linear-gradient(145deg,#1b1e2b,#12141d);border:1px solid #2c3040;border-radius:22px;width:100%}.mode-icon{width:52px;height:52px;display:grid;place-items:center;border-radius:16px;background:#2c2850;font-size:26px;flex-shrink:0}.mode strong{display:block;font-size:17px;margin-bottom:5px}.mode small{display:block;color:var(--muted);font-weight:450;line-height:1.35}.arrow{margin-left:auto;color:#a9a1ff;font-size:23px}.panel{background:#141620;border:1px solid #2b2e3c;border-radius:23px;padding:20px;margin:15px 0}.heading{font-size:25px;letter-spacing:-.6px;margin:0 0 8px}.desc{color:var(--muted);line-height:1.45;margin:0 0 18px;font-size:14px}.label{display:block;color:#d4d5df;font-size:13px;font-weight:750;margin:17px 0 8px}.field{width:100%;background:#0c0d14;color:white;border:1px solid #363949;border-radius:13px;padding:14px;outline:none}.field:focus{border-color:#8b75ff}.playerrow{display:flex;gap:8px;margin-bottom:9px}.playerrow .field{min-width:0}.playerrow button{padding:0;width:46px;background:#34202b;color:#ff9eb2}.toggleline{display:flex;align-items:center;justify-content:space-between;gap:15px;background:#0c0d14;border:1px solid #303344;border-radius:15px;padding:13px 14px;margin-top:10px}.toggleline b{font-size:14px}.toggleline small{display:block;color:var(--muted);font-size:12px;margin-top:4px;line-height:1.35}.switch{position:relative;width:48px;height:28px;flex-shrink:0}.switch input{opacity:0;width:0;height:0}.slider{position:absolute;inset:0;border-radius:99px;background:#44485a;transition:.2s}.slider:before{content:"";position:absolute;width:20px;height:20px;left:4px;top:4px;border-radius:50%;background:white;transition:.2s}.switch input:checked+.slider{background:#7c5cff}.switch input:checked+.slider:before{transform:translateX(20px)}.primary{width:100%;margin-top:16px;padding:16px}.back{background:transparent;color:#c1c2cf;padding:10px 0;margin-bottom:12px}.notice{font-size:12px;color:var(--muted);line-height:1.5;text-align:center;margin:13px 8px 0}.bigtime{font-size:clamp(52px,14vw,78px);font-weight:900;letter-spacing:-3px;text-align:center;margin:18px 0 4px;font-variant-numeric:tabular-nums}.timecaption{text-align:center;color:var(--muted);font-size:13px}.status{text-align:center;color:var(--accent2);font-size:13px;font-weight:800;letter-spacing:1.3px;text-transform:uppercase}.center{text-align:center}.revealbox{background:linear-gradient(145deg,#211d3b,#151722);border:1px solid #51458b;border-radius:24px;padding:26px 18px;text-align:center;margin:20px 0}.revealbox .symbol{font-size:48px}.revealbox h2{font-size:27px;margin:12px 0 8px}.revealbox p{color:#c1bfd5;line-height:1.5;margin:0}.playername{font-size:21px;font-weight:850;margin:10px 0}.dots{display:flex;justify-content:center;gap:7px;margin:18px 0}.dots span{height:6px;width:22px;border-radius:99px;background:#3b3d4c}.dots span.on{background:#8c76ff}.rowbtn{display:flex;gap:10px}.rowbtn button{flex:1}.hidden-time{filter:blur(10px);user-select:none}.tiny{font-size:12px;color:var(--muted);line-height:1.5}.divider{height:1px;background:#2a2d3b;margin:18px 0}.chip{display:inline-block;background:#24263a;border-radius:99px;padding:7px 11px;color:#c8c0ff;font-size:12px;font-weight:750}.foot{text-align:center;color:#666a7d;font-size:11px;margin-top:30px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top"><div class="logo">◎</div><div><div class="brand">IMPOSTER</div><div class="sub">Jogo do tempo</div></div><div class="pill">BETA · JOGÁVEL</div></header>
+
+  <section id="home" class="screen active">
+    <div class="hero"><div class="finger">◉</div><h1>Quem é o<br><span style="color:#a99aff">impostor?</span></h1><p>Todo mundo recebe o tempo secreto… menos uma pessoa. Descubram quem está blefando.</p></div>
+    <div class="cards">
+      <button class="mode" onclick="goSetup()"><span class="mode-icon">🕵️</span><span><strong>Modo Impostor</strong><small>Jogue em grupo, com tempo secreto e impostor aleatório.</small></span><span class="arrow">›</span></button>
+      <button class="mode" onclick="goTraining()"><span class="mode-icon">⏱️</span><span><strong>Treinar sozinho</strong><small>Pratique com tempos aleatórios e tente adivinhar.</small></span><span class="arrow">›</span></button>
+    </div>
+    <p class="notice">Dica: passe o celular de mão em mão e peça para cada jogador não mostrar a tela. Se os botões não funcionarem, abra o jogo em um navegador (Safari/Chrome), não na pré-visualização do app Arquivos.</p>
+  </section>
+
+  <section id="setup" class="screen">
+    <button class="back" onclick="show('home')">← Voltar</button>
+    <h1 class="heading">Preparar partida</h1><p class="desc">Adicione os jogadores na ordem em que vão receber o celular. O jogo escolhe o impostor em segredo.</p>
+    <div class="panel">
+      <label class="label" style="margin-top:0">Nomes dos jogadores</label>
+      <div id="players"></div>
+      <button class="secondary" style="width:100%;margin-top:5px" onclick="addPlayer()">＋ Adicionar jogador</button>
+      <label class="label">Tempo aleatório da rodada</label>
+      <div class="field" style="color:#c8c0ff;font-weight:800">Entre 0 e 20 segundos</div>
+      <div class="toggleline"><div><b>Mostrar cronômetro na partida</b><small>Desative para ninguém conseguir conferir o tempo durante a rodada.</small></div><label class="switch"><input id="showTimer" type="checkbox" checked><span class="slider"></span></label></div>
+      <button class="primary" onclick="startRound()">Sortear e começar →</button>
+    </div>
+    <p class="notice">O tempo sorteado é mostrado aos jogadores normais em segundos. O impostor não verá o tempo.</p>
+  </section>
+
+  <section id="reveal" class="screen">
+    <div class="status">Revelação secreta</div><div class="dots" id="dots"></div>
+    <div class="center"><div class="tiny">Passe o celular para</div><div class="playername" id="currentPlayer"></div><div class="tiny">Confira se só essa pessoa consegue ver a tela.</div></div>
+    <div class="revealbox" id="revealBox"><div class="symbol">🔒</div><h2>Pronto para ver?</h2><p>Toque no botão abaixo. Não deixe os outros jogadores olharem!</p></div>
+    <button id="revealButton" class="primary" onclick="revealRole()">Ver meu papel</button>
+    <button id="nextButton" class="primary" style="display:none" onclick="nextPlayer()">Esconder e passar o celular →</button>
+    <button class="ghost" style="width:100%;margin-top:10px" onclick="show('home')">Cancelar partida</button>
+  </section>
+
+  <section id="round" class="screen">
+    <button class="back" onclick="show('home')">← Sair da partida</button>
+    <div class="panel center">
+      <div class="status">Partida em andamento</div>
+      <div id="timerValue" class="bigtime">00:00</div>
+      <div id="timerCaption" class="timecaption">Tempo da rodada</div>
+      <div class="divider"></div>
+      <p id="roundMessage" class="desc" style="margin-bottom:12px">Conversem e tentem descobrir quem não sabe o tempo.</p>
+      <div class="rowbtn"><button id="pauseBtn" class="secondary" onclick="toggleTimer()">Pausar</button><button class="danger" onclick="endRound()">Encerrar rodada</button></div>
+    </div>
+    <p class="notice">Lembrem-se: o impostor não recebeu o tempo secreto. Não mostrem a tela uns aos outros.</p>
+  </section>
+
+  <section id="training" class="screen">
+    <button class="back" onclick="show('home')">← Voltar</button>
+    <div class="panel center">
+      <div class="chip">TREINO SOLO</div><h1 class="heading" style="margin-top:18px">Treine seu palpite</h1>
+      <p class="desc">Gere um tempo aleatório e tente adivinhar quanto ele é sem olhar para o relógio.</p>
+      <div id="trainingTime" class="bigtime">--:--</div>
+      <div id="trainingHint" class="timecaption">Toque em começar para sortear um tempo.</div>
+      <button class="primary" onclick="newTraining()">Sortear tempo</button>
+      <button id="showTraining" class="secondary" style="width:100%;margin-top:10px;display:none" onclick="revealTraining()">Revelar tempo</button>
+    </div>
+    <p class="notice">Treino simples para praticar a percepção do tempo. O tempo sorteado fica escondido até você revelar.</p>
+  </section>
+  <div class="foot">IMPOSTER · protótipo local para celular</div>
+</div>
+<script>
+let audioCtx=null;
+function beep(kind='start'){
+  try{
+    const Ctx=window.AudioContext||window.webkitAudioContext;
+    if(!Ctx)return;
+    if(!audioCtx)audioCtx=new Ctx();
+    if(audioCtx.state==='suspended')audioCtx.resume();
+    const osc=audioCtx.createOscillator(), gain=audioCtx.createGain();
+    osc.type='sine';
+    osc.frequency.value=kind==='start'?880:660;
+    gain.gain.setValueAtTime(0.0001,audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.22,audioCtx.currentTime+0.025);
+    gain.gain.exponentialRampToValueAtTime(0.0001,audioCtx.currentTime+0.28);
+    osc.connect(gain);gain.connect(audioCtx.destination);
+    osc.start();osc.stop(audioCtx.currentTime+0.3);
+  }catch(e){}
+}
+let names=['Jogador 1','Jogador 2','Jogador 3','Jogador 4','Jogador 5'];
+let roles=[], secretSeconds=0, current=0, timerInterval=null, remaining=0, running=false, timerVisible=true, trainingSeconds=0, trainingReady=false, trainingRevealed=false;
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+function goSetup(){renderPlayers();show('setup')}
+function renderPlayers(){const box=document.getElementById('players');box.innerHTML='';names.forEach((n,i)=>{let row=document.createElement('div');row.className='playerrow';let inp=document.createElement('input');inp.className='field';inp.value=n;inp.placeholder='Nome do jogador '+(i+1);inp.maxLength=24;inp.oninput=()=>names[i]=inp.value;let del=document.createElement('button');del.textContent='×';del.title='Remover jogador';del.onclick=()=>{if(names.length<=3){alert('O jogo precisa de pelo menos 3 jogadores.');return}names.splice(i,1);renderPlayers()};row.append(inp,del);box.append(row)})}
+function addPlayer(){if(names.length>=20){alert('Máximo de 20 jogadores.');return}names.push('Jogador '+(names.length+1));renderPlayers()}
+function startRound(){names=names.map((n,i)=>n.trim()||'Jogador '+(i+1));if(names.length<3){alert('Adicione pelo menos 3 jogadores.');return}const max=20;secretSeconds=Math.floor(Math.random()*(max+1));const imp=Math.floor(Math.random()*names.length);roles=names.map((n,i)=>({name:n,impostor:i===imp}));current=0;timerVisible=document.getElementById('showTimer').checked;remaining=secretSeconds;running=false;clearInterval(timerInterval);document.getElementById('pauseBtn').textContent='Começar cronômetro';updateTimer();renderReveal();show('reveal')}
+function renderReveal(){document.getElementById('dots').innerHTML=roles.map((r,i)=>'<span class="'+(i===current?'on':'')+'"></span>').join('');document.getElementById('currentPlayer').textContent=roles[current].name;document.getElementById('revealBox').innerHTML='<div class="symbol">🔒</div><h2>Pronto para ver?</h2><p>Toque abaixo. Não deixe os outros jogadores olharem!</p>';document.getElementById('revealButton').style.display='block';document.getElementById('nextButton').style.display='none'}
+function revealRole(){const r=roles[current];document.getElementById('revealBox').innerHTML=r.impostor?'<div class="symbol">🕵️</div><h2>Você é o impostor!</h2><p>Você não sabe o tempo secreto. Disfarce-se e tente descobrir sem ser pego.</p>':'<div class="symbol">⏱️</div><h2>Tempo secreto</h2><div class="bigtime" style="font-size:48px;margin:10px 0">'+format(secretSeconds)+'</div><p>Memorize o tempo. Não conte para ninguém!</p>';document.getElementById('revealButton').style.display='none';document.getElementById('nextButton').style.display='block';}
+function nextPlayer(){current++;if(current>=roles.length){show('round');updateTimer();return}renderReveal()}
+function format(s){s=Math.max(0,Math.floor(s));return '00:'+String(s).padStart(2,'0')}
+function updateTimer(){let el=document.getElementById('timerValue');el.textContent=format(remaining);el.classList.toggle('hidden-time',!timerVisible);document.getElementById('timerCaption').textContent=timerVisible?'Cronômetro visível':'Cronômetro escondido';}
+function toggleTimer(){if(running){clearInterval(timerInterval);running=false;beep('stop');document.getElementById('pauseBtn').textContent='Continuar';return}if(remaining<=0){remaining=secretSeconds}running=true;beep('start');document.getElementById('pauseBtn').textContent='Pausar';timerInterval=setInterval(()=>{if(remaining>0){remaining--;updateTimer()}else{clearInterval(timerInterval);running=false;beep('stop');document.getElementById('pauseBtn').textContent='Começar de novo';document.getElementById('roundMessage').textContent='O tempo acabou! Hora de votar em quem vocês acham que é o impostor.'}},1000)}
+function endRound(){clearInterval(timerInterval);if(running)beep('stop');running=false;show('home')}
+function goTraining(){trainingReady=false;trainingRevealed=false;document.getElementById('trainingTime').textContent='--:--';document.getElementById('trainingHint').textContent='Toque em começar para sortear um tempo.';document.getElementById('showTraining').style.display='none';show('training')}
+function newTraining(){trainingSeconds=Math.floor(Math.random()*(20+1));trainingReady=true;trainingRevealed=false;document.getElementById('trainingTime').textContent='??:??';document.getElementById('trainingHint').textContent='Tempo sorteado! Tente adivinhar antes de revelar.';document.getElementById('showTraining').style.display='block';document.getElementById('showTraining').textContent='Revelar tempo'}
+function revealTraining(){if(!trainingReady)return;document.getElementById('trainingTime').textContent=format(trainingSeconds);document.getElementById('trainingHint').textContent='Esse era o tempo sorteado.';document.getElementById('showTraining').style.display='none'}
+renderPlayers();
+</script>
+</body>
+</html>

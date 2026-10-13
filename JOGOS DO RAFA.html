@@ -1,0 +1,2122 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0c100f">
+<title>Jogos do Rafa</title>
+<meta name="description" content="Jogos do Rafa: impostor do cronômetro, impostor da palavra, adivinhe o jogador, pênaltis do cronômetro e treino. Tudo num celular só, pra jogar com a galera.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Chivo+Mono:wght@400;700&display=swap">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='55' r='38' fill='%23050706' stroke='%233dff74' stroke-width='8'/%3E%3Crect x='42' y='4' width='16' height='12' rx='3' fill='%233dff74'/%3E%3Cpath d='M50 55 L50 30' stroke='%233dff74' stroke-width='8' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+/* Layout: one centered column, one screen at a time — a black LED timer panel and a big arcade push button */
+:root{
+  --bg:#0c100f; --panel:#151b19; --line:#26302c; --fg:#e9f2ec; --muted:#8ea197;
+  --led:#3dff74; --led-off:rgba(61,255,116,.07); --ink:#04140a;
+  --crew:#3dff74; --imp:#ff4d5e; --warn:#ffc53d;
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --mono:"Chivo Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--display);font-size:16px;padding-inline:16px;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+  background-image:radial-gradient(circle at 50% -10%,#14261c 0,transparent 55%);background-attachment:fixed}
+.app{max-width:460px;margin:0 auto;padding-block:16px 32px;min-height:100%;display:flex;flex-direction:column;gap:20px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.hleft{display:flex;align-items:center;gap:10px;min-width:0}
+.brand{font-weight:800;font-size:1.1rem;background:none;color:var(--fg);padding:0;white-space:nowrap}
+.brand span{color:var(--led)}
+.back{background:var(--panel);color:var(--fg);border:1px solid var(--line);padding:8px 12px;font-weight:800;font-size:.95rem;white-space:nowrap}
+.app:has(#backBtn:not([hidden])) .brand{display:none}
+.hright{display:flex;align-items:center;gap:10px}
+.tag{font-family:var(--mono);font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:42vw}
+.hleft{flex-shrink:0}
+.snd{background:var(--panel);color:var(--fg);border:1px solid var(--line);padding:6px 10px;font-family:var(--mono);font-size:.72rem;letter-spacing:.08em}
+section{display:flex;flex-direction:column;gap:16px}
+h1{font-size:2rem;line-height:1.05;margin:0;text-wrap:balance;font-weight:800}
+h2{font-size:.78rem;margin:0;font-family:var(--mono);font-weight:400;color:var(--muted);text-transform:uppercase;letter-spacing:.14em}
+p{margin:0;color:var(--muted);line-height:1.5}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px}
+button{font:inherit;cursor:pointer;border:0;border-radius:12px}
+button:focus-visible,input:focus-visible{outline:3px solid var(--led);outline-offset:3px}
+.btn{background:var(--led);color:var(--ink);font-weight:800;font-size:1.1rem;padding:16px;width:100%}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn.red{background:var(--imp);color:#1a0306}
+.ghost{background:transparent;color:var(--fg);border:1px solid var(--line);padding:12px 14px;font-weight:500}
+.ghost:disabled{opacity:.4}
+.players{display:flex;flex-direction:column;gap:8px;margin:0;padding:0;list-style:none}
+.players li{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg);border-radius:10px;border:1px solid var(--line);min-height:46px}
+.players li.off{opacity:.45}
+.players li .n{font-family:var(--mono);color:var(--muted);font-size:.8rem;width:1.6em}
+.players li .name{flex:1;min-width:0;overflow-wrap:anywhere}
+.players li .badge{font-family:var(--mono);font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.players li .badge.ok{color:var(--led)}
+.x{background:transparent;color:var(--muted);font-size:1.3rem;line-height:1;padding:2px 8px}
+.add,.inline{display:flex;gap:8px}
+input[type=text]{flex:1;min-width:0;font:inherit;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:12px}
+input.code{font-family:var(--mono);text-transform:uppercase;letter-spacing:.3em;font-size:1.2rem;text-align:center}
+label.lbl{font-size:.85rem;color:var(--muted);display:flex;flex-direction:column;gap:6px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.step{display:flex;align-items:center;gap:6px}
+.step button{width:38px;height:38px;background:var(--bg);color:var(--fg);border:1px solid var(--line);font-size:1.2rem}
+.step button:disabled{opacity:.3}
+.step output{font-family:var(--mono);font-weight:700;min-width:4.4em;text-align:center;font-variant-numeric:tabular-nums}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px}
+.seg button{background:transparent;color:var(--muted);padding:10px;font-weight:800}
+.seg button[aria-pressed=true]{background:var(--panel);color:var(--fg);box-shadow:inset 0 0 0 1px var(--line)}
+.hint{font-size:.85rem}
+.err{color:var(--imp);font-size:.9rem}
+.err:empty{display:none}
+.center{text-align:center}
+
+/* LED panel */
+.panel{background:#050706;border-radius:12px;padding:18px 16px 12px;border:1px solid #1d2622;
+  box-shadow:inset 0 0 0 4px #0f1412, 0 10px 30px rgba(0,0,0,.5);display:flex;flex-direction:column;align-items:center;gap:8px}
+.led{display:flex;align-items:flex-end;justify-content:center;gap:2%;width:100%;max-width:340px}
+.led svg{height:auto;display:block}
+.led .dg{width:21%}
+.led .dt{width:5%}
+.led .on{fill:var(--led);filter:drop-shadow(0 0 4px var(--led))}
+.led .off{fill:var(--led-off)}
+.led.red .on{fill:var(--imp);filter:drop-shadow(0 0 4px var(--imp))}
+.led.blink .on{animation:blink 1s steps(2,start) infinite}
+.led.code .dg{width:23%}
+@keyframes blink{to{opacity:.25}}
+.plabel{font-family:var(--mono);font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);text-align:center}
+.bigcode{font-family:var(--mono);font-weight:700;font-size:3rem;letter-spacing:.25em;color:var(--led);text-shadow:0 0 12px rgba(61,255,116,.5);padding-left:.25em}
+
+/* arcade push button */
+.pushwrap{display:grid;place-items:center;padding-block:8px}
+.push{width:min(58vw,220px);aspect-ratio:1;border-radius:50%;position:relative;color:var(--ink);font-weight:800;font-size:1.3rem;letter-spacing:.06em;
+  background:#111;padding:14px;box-shadow:0 8px 0 #000, 0 14px 30px rgba(0,0,0,.6);touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+.push span{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;
+  background:radial-gradient(circle at 40% 30%,#c9ffd9 0,var(--led) 35%,#13a845 100%);
+  box-shadow:0 0 30px rgba(61,255,116,.45), inset 0 -8px 16px rgba(0,0,0,.25);transition:transform .06s}
+.push.on span{background:radial-gradient(circle at 40% 30%,#ffd0d5 0,var(--imp) 35%,#a8152a 100%);box-shadow:0 0 34px rgba(255,77,94,.5), inset 0 -8px 16px rgba(0,0,0,.25);color:#1a0306}
+.push:active span,.push.pressed span{transform:translateY(4px) scale(.97)}
+.push:disabled{cursor:default;opacity:.6}
+.keyhint{font-size:.8rem;text-align:center}
+@media (prefers-reduced-motion:reduce){.led.blink .on{animation:none}.push span{transition:none}}
+
+.role{font-size:2.2rem;font-weight:800;text-align:center;line-height:1}
+.role.imp{color:var(--imp)}
+.who{font-size:2.6rem;font-weight:800;color:var(--led);text-align:center;overflow-wrap:anywhere}
+.bars{display:flex;flex-direction:column;gap:10px}
+.bar{display:grid;grid-template-columns:minmax(0,7em) 1fr auto;align-items:center;gap:10px}
+.bar .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar .track{height:14px;background:var(--bg);border-radius:7px;position:relative;border:1px solid var(--line)}
+.bar .fill{position:absolute;inset:0 auto 0 0;border-radius:7px;background:var(--muted)}
+.bar.imp .fill{background:var(--imp)}
+.bar.crew .fill{background:var(--crew)}
+.bar .t{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:.9rem}
+.target{position:absolute;top:-5px;bottom:-5px;width:2px;background:var(--fg)}
+.vote{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.vote button{background:var(--panel);color:var(--fg);border:1px solid var(--line);padding:14px 10px;overflow-wrap:anywhere}
+.vote button[aria-pressed=true]{border-color:var(--imp);background:var(--imp);color:#1a0306;font-weight:800}
+.vote button:disabled:not([aria-pressed=true]){opacity:.45}
+.vote .skip{grid-column:1/-1;background:transparent;color:var(--muted)}
+.score{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
+.score li{display:flex;justify-content:space-between;gap:10px;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.verdict{font-size:1.8rem;font-weight:800;text-align:center;text-wrap:balance}
+.rules{font-size:.9rem}
+.rules ol{margin:0;padding-left:1.2em;color:var(--muted);line-height:1.55;display:flex;flex-direction:column;gap:4px}
+.modes{display:flex;flex-direction:column;gap:12px}
+.mode{background:var(--panel);border:1px solid var(--line);color:var(--fg);text-align:left;padding:20px;display:flex;flex-direction:column;gap:6px}
+.mode:hover{border-color:var(--led)}
+.mode .mt{font-size:1.5rem;font-weight:800}
+.mode .md{color:var(--muted);line-height:1.45}
+.mode.online .mt{color:var(--warn)} .mode.imp .mt{color:var(--imp)} .mode.solo .mt{color:var(--led)}
+.grade{font-size:2rem;font-weight:800;text-align:center}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.stats div{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 4px}
+.stats b{display:block;font-family:var(--mono);font-size:1.2rem;font-variant-numeric:tabular-nums}
+.stats span{font-size:.75rem;color:var(--muted)}
+.roomlist{display:flex;flex-direction:column;gap:8px}
+.roomitem{display:flex;align-items:center;gap:12px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;color:var(--fg);text-align:left;width:100%}
+.roomitem .rn{flex:1;min-width:0;font-weight:800;overflow-wrap:anywhere}
+.roomitem .rs{font-family:var(--mono);font-size:.75rem;color:var(--muted);white-space:nowrap}
+.roomitem .go{color:var(--led);font-weight:800;white-space:nowrap}
+.roomitem:disabled{opacity:.5}
+.empty{color:var(--muted);text-align:center;padding:12px;font-size:.9rem}
+.pill{display:inline-block;font-family:var(--mono);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:99px;border:1px solid var(--line);color:var(--muted)}
+.pill.pub{color:var(--warn);border-color:rgba(255,197,61,.4)}
+.pill.priv{color:var(--led);border-color:rgba(61,255,116,.35)}
+.cd{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--warn)}
+.conn{font-family:var(--mono);font-size:.75rem;color:var(--warn);text-align:center}
+/* chat */
+.mode.word .mt{color:#7cc4ff}
+
+/* ---------- HOME: arcade lobby ---------- */
+:root{ --arcade:"Bungee","Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --c-imp:#ff4d5e; --c-word:#4fb3ff; --c-guess:#b07cff; --c-pen:#ffc53d; --c-solo:#3dff74; }
+.app{position:relative;z-index:1}
+.fx{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.fx i{position:absolute;display:block;width:10px;height:10px;border-radius:2px;opacity:.55;animation:drift 14s linear infinite}
+.fx i:nth-child(3n){border-radius:50%}
+.fx i:nth-child(4n){width:6px;height:16px}
+@keyframes drift{from{transform:translateY(110vh) rotate(0)}to{transform:translateY(-12vh) rotate(540deg)}}
+.hero{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding-top:6px}
+.sign{font-family:var(--arcade);font-weight:400;line-height:.92;margin:0;font-size:clamp(2.8rem,15vw,4.4rem);letter-spacing:.01em;transform:rotate(-3deg)}
+.sign .l1{display:block;color:var(--fg);text-shadow:0 0 18px rgba(255,255,255,.18)}
+.sign .l2{display:block;color:var(--led);text-shadow:0 0 6px var(--led),0 0 26px rgba(61,255,116,.55);animation:neon 4s infinite}
+@keyframes neon{0%,18%,22%,62%,64%,100%{opacity:1}20%,63%{opacity:.45}}
+.tagline{font-size:1.05rem;color:var(--muted);max-width:30ch}
+.tagline b{color:var(--fg)}
+.miniled{cursor:pointer;width:100%;border:0;font:inherit;color:inherit;transition:transform .08s}
+.miniled:active{transform:scale(.98)}
+.miniled .plabel b{color:var(--warn);font-weight:700}
+.miniled.hit{box-shadow:inset 0 0 0 4px #0f1412,0 0 0 3px var(--led),0 10px 30px rgba(0,0,0,.5)}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tile{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:8px;text-align:left;padding:16px 14px 14px;border-radius:18px;color:var(--fg);min-width:0;overflow:hidden;
+  background:linear-gradient(160deg,color-mix(in srgb,var(--c) 28%,var(--panel)) 0%,var(--panel) 70%);
+  border:1px solid color-mix(in srgb,var(--c) 45%,var(--line));
+  box-shadow:0 6px 0 color-mix(in srgb,var(--c) 35%,#000),0 12px 24px rgba(0,0,0,.35);
+  transition:transform .12s ease, box-shadow .12s ease;animation:pop .5s cubic-bezier(.2,1.4,.4,1) both}
+.tile:nth-child(2){animation-delay:.06s}.tile:nth-child(3){animation-delay:.12s}.tile:nth-child(4){animation-delay:.18s}.tile:nth-child(5){animation-delay:.24s}
+@keyframes pop{from{transform:translateY(14px) scale(.94)}to{transform:none}}
+.tile:hover{transform:translateY(-3px)}
+.tile:active,.tile.pick{transform:translateY(5px);box-shadow:0 1px 0 color-mix(in srgb,var(--c) 35%,#000),0 4px 10px rgba(0,0,0,.35)}
+.tile.flash{outline:3px solid var(--c);outline-offset:2px}
+.tile.wide{grid-column:1/-1}
+.tile .ti{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:color-mix(in srgb,var(--c) 22%,transparent);color:var(--c)}
+.tile .ti svg{width:28px;height:28px}
+.tile .tt{font-family:var(--arcade);font-size:1.02rem;line-height:1.08;color:var(--c);text-wrap:balance}
+.tile .td{font-size:.86rem;color:var(--muted);line-height:1.35}
+.tile .tb{margin-top:auto;font-family:var(--mono);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:99px;border:1px solid color-mix(in srgb,var(--c) 45%,var(--line));color:var(--c)}
+.tile .new{position:absolute;top:12px;right:-30px;transform:rotate(35deg);background:var(--c);color:#1a1300;font-family:var(--arcade);font-size:.7rem;padding:3px 34px}
+.t-imp{--c:var(--c-imp)} .t-word{--c:var(--c-word)} .t-guess{--c:var(--c-guess)} .t-pen{--c:var(--c-pen)} .t-solo{--c:var(--c-solo)}
+.surprise{font-family:var(--arcade);font-size:1.15rem;background:linear-gradient(90deg,var(--c-imp),var(--c-pen),var(--c-solo),var(--c-word),var(--c-guess));background-size:300% 100%;color:#0c100f;padding:16px;width:100%;border-radius:14px;animation:slide 6s linear infinite;box-shadow:0 6px 0 #000}
+.surprise:active{transform:translateY(4px);box-shadow:0 2px 0 #000}
+@keyframes slide{to{background-position:300% 0}}
+.strip{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;font-family:var(--mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.strip span::before{content:"● ";color:var(--led)}
+@media (max-width:340px){.tiles{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){.fx{display:none}.sign .l2,.tile,.surprise{animation:none}}
+.mode.pen .mt{color:var(--warn)}
+.mode.guess .mt{color:#c79bff}
+.t-dv{--c:#ff8a3d}
+.t-lau{--c:#5ee6c3}
+.t-lt{--c:#ffd166}
+.t-ment{--c:#ff7eb6}
+.claims{display:flex;flex-direction:column;gap:8px}
+.claim{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.claim .cn{font-weight:800;overflow-wrap:anywhere}
+.claim .ct{font-family:var(--mono);font-weight:700;font-variant-numeric:tabular-nums}
+.claim .cr{font-family:var(--mono);font-size:.78rem;color:var(--muted);grid-column:1/-1}
+.claim.lie{border-color:var(--imp)} .claim.lie .ct{color:var(--imp)}
+.claim.true{border-color:var(--led)} .claim.true .ct{color:var(--led)}
+.claim.best{box-shadow:inset 0 0 0 1px var(--warn);border-color:var(--warn)}
+.timein{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px}
+.timein input{font-family:var(--mono);font-size:1.6rem;text-align:center;padding:10px;min-width:0;width:100%}
+.timein .dot{font-family:var(--mono);font-size:1.6rem}
+.scorebig{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;text-align:center}
+.scorebig b{font-size:1rem;overflow-wrap:anywhere}
+.scorebig .sc{font-family:var(--arcade);font-size:2.6rem;color:var(--warn);font-variant-numeric:tabular-nums}
+.table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.85rem}
+.table th,.table td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:right}
+.table th:first-child,.table td:first-child{text-align:left;font-family:var(--display);font-weight:800}
+.table th{font-weight:400;color:var(--muted);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase}
+.lot{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding-block:22px}
+.lot .ln{font-family:var(--arcade);font-size:1.7rem;line-height:1.05;color:var(--fg);text-wrap:balance}
+.lot .lp{font-family:var(--mono);font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.lot .lr{font-family:var(--mono);font-size:2.2rem;font-weight:700;color:#5ee6c3;line-height:1}
+.bid{display:flex;align-items:baseline;justify-content:center;gap:10px;font-family:var(--mono)}
+.bid b{font-size:2.4rem;color:var(--warn);font-variant-numeric:tabular-nums}
+.bid span{color:var(--muted)}
+.bidders{display:flex;flex-direction:column;gap:10px}
+.bidder{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 12px;align-items:center;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.bidder.lead{border-color:var(--warn);box-shadow:inset 0 0 0 1px var(--warn)}
+.bidder.out{opacity:.45}
+.bidder .bn{font-weight:800;overflow-wrap:anywhere}
+.bidder .bm{font-family:var(--mono);font-size:.8rem;color:var(--muted)}
+.bidder .bm b{color:#5ee6c3}
+.bidder .bb{display:flex;gap:6px;grid-column:1/-1}
+.bidder .bb button{flex:1;background:var(--panel);color:var(--fg);border:1px solid var(--line);padding:10px 4px;font-family:var(--mono);font-weight:700}
+.bidder .bb button:disabled{opacity:.3}
+.hammer{background:var(--warn);color:#1a1300;font-weight:800;font-size:1.1rem;padding:16px;width:100%;border-radius:12px;box-shadow:0 5px 0 #8a6a0c}
+.hammer:active{transform:translateY(3px);box-shadow:0 2px 0 #8a6a0c}
+.hammer:disabled{opacity:.4;box-shadow:none}
+.pitches{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.pitchwrap{display:flex;flex-direction:column;gap:6px;min-width:0;border-radius:14px;padding:6px;border:1px solid transparent}
+.pitchwrap.lead{border-color:var(--warn)}
+.pth{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding-inline:4px}
+.pth b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.pth .money{font-family:var(--mono);font-weight:700;color:#5ee6c3;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pitch{position:relative;aspect-ratio:3/5;max-width:100%;border-radius:10px;background:#1f3a5c;border:3px solid #cfe3ff;overflow:visible}
+.pitch .box6{position:absolute;left:28%;width:44%;height:16%;border:2px solid #cfe3ff;border-top:0}
+.pitch .box6.top{top:-2px;border-top:0;border-bottom:2px solid #cfe3ff}
+.pitch .box6.bot{bottom:-2px;border-top:2px solid #cfe3ff;border-bottom:0}
+.pitch .mid{position:absolute;left:0;right:0;top:50%;border-top:2px solid #cfe3ff}
+.pitch .circle{position:absolute;left:50%;top:50%;width:34%;aspect-ratio:1;border:2px solid #cfe3ff;border-radius:50%;transform:translate(-50%,-50%)}
+.spot{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:2px;width:48%;text-align:center}
+.spot .face{width:36px;height:36px;border-radius:50%;background:#0b1424;border:3px solid #ff2d6f;display:grid;place-items:center;font-family:var(--mono);font-weight:700;font-size:.85rem;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.5)}
+.spot .face.fill{border-color:#8ea197;color:#8ea197}
+.spot b{font-size:.66rem;line-height:1.05;color:#fff;text-shadow:0 1px 3px #000;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.spot i{font-style:normal;font-family:var(--mono);font-size:.6rem;color:#cfe3ff}
+.spot.empty .face{background:rgba(255,255,255,.06);border:2px dashed rgba(255,255,255,.5);color:rgba(255,255,255,.7);font-size:.62rem}
+.spot.empty.hot .face{border-color:#5ee6c3;color:#5ee6c3;box-shadow:0 0 12px rgba(94,230,195,.6)}
+.spot.empty.hot b{color:#5ee6c3}
+
+/* ---------- revelação do campeão ---------- */
+.rv{display:flex;flex-direction:column;gap:14px;align-items:stretch}
+.rv-title{font-family:var(--arcade);text-align:center;font-size:1.5rem;color:var(--muted);min-height:1.6em}
+.rv-card{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;animation:rvin .55s cubic-bezier(.2,1.4,.4,1) both}
+.rv-card .rk{font-family:var(--arcade);font-size:1.4rem;color:var(--muted);width:1.6em}
+.rv-card .nm{font-weight:800;font-size:1.1rem;overflow-wrap:anywhere}
+.rv-card .nt{font-family:var(--mono);font-weight:700;font-size:1.5rem;color:var(--fg);font-variant-numeric:tabular-nums}
+.rv-card.gold{border-color:var(--warn);background:linear-gradient(160deg,rgba(255,197,61,.22),var(--panel) 70%);box-shadow:0 0 0 1px var(--warn),0 0 30px rgba(255,197,61,.25)}
+.rv-card.gold .rk,.rv-card.gold .nt{color:var(--warn)}
+@keyframes rvin{from{opacity:0;transform:translateY(24px) scale(.92)}to{opacity:1;transform:none}}
+.champ-wrap{display:flex;flex-direction:column;align-items:center;gap:6px;padding-block:10px;animation:rvin .6s both}
+.trophy{width:120px;height:120px;animation:pop .9s cubic-bezier(.2,1.6,.4,1) both, sway 2.4s ease-in-out .9s infinite}
+@keyframes sway{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}
+.champ-name{font-family:var(--arcade);font-size:clamp(2rem,11vw,3rem);line-height:1;text-align:center;color:var(--warn);text-shadow:0 0 10px rgba(255,197,61,.6),0 0 40px rgba(255,197,61,.35);animation:glow 1.4s ease-in-out infinite alternate}
+@keyframes glow{to{text-shadow:0 0 18px rgba(255,197,61,.9),0 0 60px rgba(255,197,61,.5)}}
+.champ-sub{font-family:var(--mono);color:var(--muted);letter-spacing:.14em;text-transform:uppercase;font-size:.75rem}
+.burst{position:fixed;inset:0;pointer-events:none;z-index:5;overflow:hidden}
+.burst i{position:absolute;top:-4vh;width:9px;height:14px;border-radius:2px;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(115vh) rotate(720deg)}}
+.shake{animation:shake .5s}
+@keyframes shake{0%,100%{transform:none}20%{transform:translate(-4px,2px)}40%{transform:translate(4px,-2px)}60%{transform:translate(-3px,-1px)}80%{transform:translate(3px,1px)}}
+@media (prefers-reduced-motion:reduce){.rv-card,.champ-wrap,.trophy,.champ-name{animation:none}.burst{display:none}}
+@media (max-width:360px){.pitches{grid-template-columns:1fr 1fr}.spot .face{width:34px;height:34px}}
+.chain{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.chain .lk{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:64px;padding:8px 6px;border-radius:10px;background:var(--bg);border:1px solid var(--line)}
+.chain .lk b{font-size:.78rem;overflow-wrap:anywhere;text-align:center;max-width:9ch}
+.chain .lk small{font-size:.65rem}
+.chain .lk span{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:1rem}
+.chain .lk.hid span{color:var(--muted);letter-spacing:.1em}
+.chain .lk.bad{border-color:var(--imp);box-shadow:inset 0 0 0 1px var(--imp)}
+.chain .lk.bad span{color:var(--imp)}
+.chain .lk.ok span{color:var(--led)}
+.chain .lk.last{border-color:var(--warn)}
+.chain .arrow{color:var(--muted)}
+.doubt{background:#ff8a3d;color:#1a0a00;font-weight:800;font-size:1.1rem;padding:16px;width:100%;border-radius:12px;box-shadow:0 5px 0 #8a3f0c}
+.doubt:active{transform:translateY(3px);box-shadow:0 2px 0 #8a3f0c}
+.clues{display:flex;flex-direction:column;gap:8px;margin:0;padding:0;list-style:none;counter-reset:c}
+.clues li{display:flex;gap:12px;align-items:baseline;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;line-height:1.35}
+.clues li .cn{font-family:var(--mono);color:#c79bff;font-weight:700;min-width:1.4em}
+.clues li.new{border-color:#c79bff}
+.pts{font-family:var(--mono);color:var(--warn);text-align:center}
+.name-in{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pens{display:flex;flex-direction:column;gap:12px}
+.penrow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:12px}
+.penrow .pn{font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.penrow .pg{font-family:var(--mono);font-weight:700;font-size:1.6rem;color:var(--warn);font-variant-numeric:tabular-nums}
+.balls{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.ball{width:24px;height:24px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:.8rem;font-weight:800}
+.ball.g{background:var(--led);border-color:var(--led);color:var(--ink)}
+.ball.m{background:transparent;border-color:var(--imp);color:var(--imp)}
+.ball.now{border-color:var(--warn);box-shadow:0 0 0 3px rgba(255,197,61,.25)}
+.goal{font-size:3rem;font-weight:800;text-align:center;color:var(--led);letter-spacing:.04em;line-height:1}
+.duel{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.duel div{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center;min-width:0}
+.duel div.win{border-color:var(--led);box-shadow:inset 0 0 0 1px var(--led)}
+.duel b{display:block;overflow-wrap:anywhere}
+.duel .t{display:block;font-family:var(--mono);font-size:1.3rem;font-variant-numeric:tabular-nums}
+.duel small{display:block;color:var(--muted);font-family:var(--mono)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:var(--bg);color:var(--muted);border:1px solid var(--line);padding:8px 12px;border-radius:99px;font-size:.9rem}
+.chip[aria-pressed=true]{background:var(--led);color:var(--ink);border-color:var(--led);font-weight:800}
+.secret{font-size:2.6rem;font-weight:800;text-align:center;color:var(--led);overflow-wrap:anywhere;line-height:1.05;text-shadow:0 0 14px rgba(61,255,116,.35)}
+.secret.imp{color:var(--imp);text-shadow:0 0 14px rgba(255,77,94,.35)}
+.cluetab{width:100%;border-collapse:collapse;font-size:.92rem}
+.cluetab th,.cluetab td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top;overflow-wrap:anywhere}
+.cluetab th{font-family:var(--mono);font-weight:400;font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+.cluetab tr.now td{color:var(--led);font-weight:800}
+.cluetab tr.imp td:first-child{color:var(--imp);font-weight:800}
+.cluewrap{overflow-x:auto}
+.chat{display:flex;flex-direction:column;gap:10px}
+.chatlog{max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;font-size:.92rem;overscroll-behavior:contain}
+.chatlog .m{line-height:1.35;overflow-wrap:anywhere}
+.chatlog .m b{color:var(--led);margin-right:6px}
+.chatlog .m.me b{color:var(--warn)}
+.chatlog .m.sys{color:var(--muted);font-family:var(--mono);font-size:.78rem}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="hleft"><button class="back" id="backBtn" hidden>‹ Início</button><button class="brand" id="homeBtn" aria-label="Voltar ao início">Jogos do <span>Rafa</span></button></div>
+    <div class="hright"><span class="tag" id="roundTag">Início</span><button class="snd" id="sndBtn" aria-pressed="true">SOM ON</button></div>
+  </header>
+  <main id="screen"></main>
+  <div class="box chat" id="chatBox" hidden>
+    <h2>Conversa</h2>
+    <div class="chatlog" id="chatLog" aria-live="polite"></div>
+    <form class="inline" id="chatForm"><input type="text" id="chatInput" maxlength="200" placeholder="Escreva pra sala" autocomplete="off"><button class="ghost" type="submit">Enviar</button></form>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = ms => ms == null ? '—' : (ms/1000).toFixed(2) + 's';
+const shuffle = a => { for (let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v==null ? d : JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+};
+
+/* ---------- seven-segment LED ---------- */
+const SEG = {
+  a:"12,4 48,4 52,8 48,12 12,12 8,8", b:"52,10 56,14 56,44 52,48 48,44 48,14", c:"52,52 56,56 56,86 52,90 48,86 48,56",
+  d:"12,88 48,88 52,92 48,96 12,96 8,92", e:"8,52 12,56 12,86 8,90 4,86 4,56", f:"8,10 12,14 12,44 8,48 4,44 4,14",
+  g:"12,46 48,46 52,50 48,54 12,54 8,50"
+};
+const MAP = {'0':'abcdef','1':'bc','2':'abged','3':'abgcd','4':'fgbc','5':'afgcd','6':'afgedc','7':'abc','8':'abcdefg','9':'abcdfg','-':'g',' ':''};
+function digit(ch){
+  const on = MAP[ch] ?? '';
+  return `<svg class="dg" viewBox="0 0 60 100" aria-hidden="true"><g transform="skewX(-6) translate(6 0)">${
+    Object.keys(SEG).map(k=>`<polygon class="${on.includes(k)?'on':'off'}" points="${SEG[k]}"/>`).join('')}</g></svg>`;
+}
+function led(str, cls=''){
+  let html='';
+  for(const ch of str) html += ch==='.' ? `<svg class="dt" viewBox="0 0 14 100" aria-hidden="true"><circle class="on" cx="6" cy="91" r="5.5"/></svg>` : digit(ch);
+  return `<div class="led ${cls}" role="img" aria-label="${str.includes('-')?'tempo escondido':str+' segundos'}">${html}</div>`;
+}
+const ledTime = ms => Math.min(ms/1000,99.99).toFixed(2).padStart(5,'0');
+
+/* ---------- sound ---------- */
+let ac=null, soundOn = store.get('ci-sound', true);
+function beep(freq=1400, dur=.13){
+  if(soundOn){
+    try{
+      ac = ac || new (window.AudioContext||window.webkitAudioContext)();
+      if(ac.state==='suspended') ac.resume();
+      const o=ac.createOscillator(), g=ac.createGain(), t=ac.currentTime;
+      o.type='square'; o.frequency.value=freq;
+      g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.18,t+.008); g.gain.setValueAtTime(0.18,t+dur-.02); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+      o.connect(g).connect(ac.destination); o.start(t); o.stop(t+dur+.02);
+    }catch(e){}
+  }
+  try{ navigator.vibrate && navigator.vibrate(40); }catch(e){}
+}
+function paintSound(){ const b=$('#sndBtn'); b.textContent = soundOn?'SOM ON':'SOM OFF'; b.setAttribute('aria-pressed', soundOn); }
+$('#sndBtn').onclick = ()=>{ soundOn=!soundOn; store.set('ci-sound', soundOn); paintSound(); if(soundOn) beep(); };
+paintSound();
+
+/* ---------- stopwatch (push button + LED) ---------- */
+let keyHandler=null, swTimer=null;
+function stopSwTimer(){ if(swTimer){ clearInterval(swTimer); swTimer=null; } }
+function stopwatch({ pre, label, onStop, show=false }){
+  let t0=null, done=false;
+  const html = `
+    <div class="panel" id="panel">${pre}<div class="plabel">${label}</div></div>
+    <div class="pushwrap"><button class="push" id="push" aria-label="Iniciar cronômetro"><span id="pushTxt">INICIAR</span></button></div>
+    <p class="keyhint">Aperte o botão: <strong>pi</strong> e começa. Aperte de novo: <strong>pi</strong> e para.<br>Dá pra jogar de olhos fechados.</p>`;
+  function bind(){
+    const btn=$('#push');
+    const press = () => {
+      if(done) return;
+      if(t0===null){
+        t0=performance.now(); beep();
+        btn.classList.add('on'); btn.setAttribute('aria-label','Parar cronômetro'); $('#pushTxt').textContent='PARAR';
+        if(show){
+          const paint = () => { const p=$('#panel'); if(p) p.innerHTML = led(ledTime(performance.now()-t0)) + `<div class="plabel">rodando · tempo visível</div>`; };
+          paint(); stopSwTimer(); swTimer = setInterval(paint, 50);
+        } else {
+          $('#panel').innerHTML = led('--.--','blink') + `<div class="plabel">rodando · tempo escondido</div>`;
+        }
+      } else {
+        const ms=performance.now()-t0; done=true; beep(); stopSwTimer();
+        if(show) $('#panel').innerHTML = led(ledTime(ms)) + `<div class="plabel">parou aqui</div>`;
+        btn.classList.remove('on'); btn.disabled=true; $('#pushTxt').textContent='OK';
+        if(keyHandler){ document.removeEventListener('keydown', keyHandler); keyHandler=null; }
+        onStop(ms);
+      }
+    };
+    btn.addEventListener('pointerdown', e=>{ e.preventDefault(); btn.classList.add('pressed'); press(); });
+    ['pointerup','pointerleave','pointercancel'].forEach(ev=>btn.addEventListener(ev,()=>btn.classList.remove('pressed')));
+    btn.addEventListener('click', e=>{ if(e.detail===0) press(); });
+    if(keyHandler) document.removeEventListener('keydown', keyHandler);
+    keyHandler = e=>{ if(e.code==='Space' && !e.repeat && document.activeElement!==btn && document.activeElement?.tagName!=='INPUT'){ e.preventDefault(); press(); } };
+    document.addEventListener('keydown', keyHandler);
+  }
+  return { html, bind };
+}
+
+/* ---------- shared bits ---------- */
+function bars(rows, target){
+  const vals = rows.map(r=>r.ms||0);
+  const max = Math.max(target||0, ...vals, 1000) * 1.1;
+  return `<div class="bars">${rows.map(r=>`<div class="bar ${r.cls||''}">
+    <span class="nm">${esc(r.name)}</span>
+    <span class="track">${r.ms!=null?`<span class="fill" style="width:${r.ms/max*100}%"></span>`:''}${target?`<span class="target" style="left:${target/max*100}%"></span>`:''}</span>
+    <span class="t">${fmt(r.ms)}</span></div>`).join('')}</div>`;
+}
+let screenName='home';
+var heroTimer = null;
+const render = (html, name) => {
+  if(keyHandler){ document.removeEventListener('keydown',keyHandler); keyHandler=null; }
+  stopSwTimer();
+  if(heroTimer){ clearInterval(heroTimer); heroTimer=null; }
+  screenName = name || '';
+  $('#screen').innerHTML = html;
+  if(typeof tickCountdown==='function') tickCountdown();
+};
+const tag = t => $('#roundTag').textContent = t;
+const randTarget = (minT,maxT) => (minT + Math.floor(Math.random()*(maxT-minT+1)))*1000;
+// "Mostrar o tempo correndo" toggle row; readonly shows the value only
+function showTimeRow(on, readonly){
+  return `<div class="row"><span>Mostrar o tempo correndo</span>${readonly
+    ? `<span class="pill ${on?'pub':''}">${on?'Sim':'Não'}</span>`
+    : `<div class="seg" role="group" aria-label="Mostrar o tempo correndo" style="min-width:150px"><button type="button" data-show="0" aria-pressed="${!on}">Não</button><button type="button" data-show="1" aria-pressed="${on}">Sim</button></div>`}</div>
+    <p class="hint">${on?'O visor mostra os segundos correndo. Fica bem mais fácil.':'O visor fica escondido. Você conta de cabeça.'}</p>`;
+}
+const bindShow = fn => $$('[data-show]').forEach(b=>b.onclick=()=>fn(b.dataset.show==='1'));
+
+/* ---------- navigation ---------- */
+let pushed=false;
+function enterMode(fn){ if(!pushed){ try{ history.pushState({ci:1},''); pushed=true; }catch(e){} } $('#backBtn').hidden=false; fn(); }
+function goHome(){ if(pushed){ try{ history.back(); return; }catch(e){} } home(); }
+window.addEventListener('popstate', ()=>{ pushed=false; home(); });
+$('#backBtn').onclick = goHome;
+$('#homeBtn').onclick = goHome;
+
+/* ---------- HOME ---------- */
+function home(){
+  if(ON.code) onlineLeave(true);
+  showChat(false);
+  $('#backBtn').hidden = true;
+  tag('Bora jogar');
+  const IC = {
+    imp:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9.5M10 2.5h4M18.5 6.5l1.5-1.5"/></svg>',
+    word:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"><path d="M4 5h16v11H10l-5 4v-4H4z"/><path d="M10 9.2a2 2 0 1 1 2.6 1.9c-.5.2-.6.6-.6 1"/><circle cx="12" cy="13.6" r=".4" fill="currentColor"/></svg>',
+    guess:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="7.5" r="4"/><path d="M4 21c.8-4.2 4-6.5 8-6.5s7.2 2.3 8 6.5"/></svg>',
+    pen:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5l3.4 2.5-1.3 4h-4.2l-1.3-4z" fill="currentColor"/><path d="M12 3v4.5M20.6 9.3l-5.2.7M17.5 19.5l-3.4-5.5M6.5 19.5l3.4-5.5M3.4 9.3l5.2.7"/></svg>',
+    solo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/></svg>',
+  };
+  render(`<section>
+    <div class="hero">
+      <h1 class="sign"><span class="l1">Jogos</span><span class="l2">do Rafa</span></h1>
+      <p class="tagline">Um celular, a galera reunida e <b>zero desculpa</b> pra não jogar.</p>
+    </div>
+    <button class="panel miniled" id="heroLed" aria-label="Desafio rápido: pare o cronômetro no 10">
+      ${led('00.00')}<div class="plabel" id="heroLbl">desafio rápido · toque pra parar no <b>10.00</b></div>
+    </button>
+    <div class="tiles" id="tiles">
+      <button class="tile t-pen wide" id="mPen"><span class="new">NOVO</span><span class="ti">${IC.pen}</span><span class="tt">Pênaltis do cronômetro</span><span class="td">Para o tempo mais perto do alvo que o rival e estufa a rede. Cinco cobranças pra cada.</span><span class="tb">1 contra 1</span></button>
+      <button class="tile t-imp" id="mImp"><span class="ti">${IC.imp}</span><span class="tt">Impostor do cronômetro</span><span class="td">Todo mundo sabe o tempo. Um tá blefando.</span><span class="tb">3+ jogadores</span></button>
+      <button class="tile t-word" id="mWord"><span class="ti">${IC.word}</span><span class="tt">Impostor da palavra</span><span class="td">Cachorro? "Ração." Avião?! Pega o impostor.</span><span class="tb">3+ jogadores</span></button>
+      <button class="tile t-guess" id="mGuess"><span class="ti">${IC.guess}</span><span class="tt">Adivinhe o jogador</span><span class="td">Quantas dicas você precisa pra cravar o craque?</span><span class="tb">Futebol</span></button>
+      <button class="tile t-dv" id="mDv"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-7-7 18-2-8z"/></svg></span><span class="tt">Duvido!</span><span class="td">Um cronômetro que vai somando no escuro. Não deixa a soma estourar. Se duvidarem, abre o jogo.</span><span class="tb">3+ jogadores</span></button>
+      <button class="tile t-lau" id="mLau"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4l6 6-8 8-6-6z"/><path d="M4 20l5-5M12 6l6 6"/></svg></span><span class="tt">Leilão de craques</span><span class="td">R$ 50 no bolso e um campinho pra encher: goleiro, zagueiro, 2 meias e atacante. Dá o lance, bate o martelo.</span><span class="tb">2 a 3 jogadores</span></button>
+      <button class="tile t-lt" id="mLt"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 13V8M9 3h6M12 13l3 2"/></svg></span><span class="tt">Leilão de tempo</span><span class="td">"Eu erro por menos de 0,3s!" Quem prometer menos tem que cumprir.</span><span class="tb">2+ jogadores</span></button>
+      <button class="tile t-ment" id="mMent"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16v10H9l-5 4z"/><path d="M8 11h8M8 8h5"/></svg></span><span class="tt">Mentiroso do tempo</span><span class="td">Parou o cronômetro? Diz quanto deu. Pode mentir. Vão acreditar?</span><span class="tb">2+ jogadores</span></button>
+      <button class="tile t-solo" id="mSolo"><span class="ti">${IC.solo}</span><span class="tt">Treinar sozinho</span><span class="td">Afia o relógio interno antes de humilhar a galera.</span><span class="tb">Solo</span></button>
+    </div>
+    <button class="surprise" id="surprise">Jogo surpresa!</button>
+    <div class="strip"><span>9 jogos</span><span>1 celular</span><span>sem cadastro</span></div>
+  </section>`, 'home');
+  const go = { mImp:()=>enterMode(localSetup), mWord:()=>enterMode(wordSetup), mPen:()=>enterMode(penSetup), mGuess:()=>enterMode(guessSetup), mDv:()=>enterMode(dvSetup), mLau:()=>enterMode(lauSetup), mLt:()=>enterMode(ltSetup), mMent:()=>enterMode(mentSetup), mSolo:()=>enterMode(()=>solo(true)) };
+  Object.keys(go).forEach(id => { $('#'+id).onclick = () => { try{ beep(1500,.06); }catch(e){} go[id](); }; });
+
+  // mini desafio: o visor corre e você tenta parar em 10.00
+  let t0 = performance.now(), running = true;
+  const box = $('#heroLed');
+  const paint = () => { if(!running) return; const p=$('#heroLed'); if(!p) return; const ms=(performance.now()-t0)%15000; p.firstElementChild.outerHTML = led(ledTime(ms)); };
+  heroTimer = setInterval(paint, 50);
+  box.onclick = () => {
+    if(running){
+      const ms = (performance.now()-t0)%15000, d = Math.abs(ms-10000)/1000;
+      running = false; box.firstElementChild.outerHTML = led(ledTime(ms), d<0.15?'':'red');
+      box.classList.toggle('hit', d<0.15);
+      $('#heroLbl').innerHTML = d<0.05 ? '<b>CRAVOU!</b> lenda · toque pra tentar de novo' : d<0.15 ? `<b>quase perfeito</b> · errou por ${d.toFixed(2)}s` : `errou por <b>${d.toFixed(2)}s</b> · toque pra tentar de novo`;
+      try{ beep(d<0.15?1800:600, .15); }catch(e){}
+    } else {
+      running = true; t0 = performance.now(); box.classList.remove('hit');
+      $('#heroLbl').innerHTML = 'desafio rápido · toque pra parar no <b>10.00</b>';
+      try{ beep(1400,.06); }catch(e){}
+    }
+  };
+
+  // jogo surpresa: passa por todos os cards e para num aleatório
+  $('#surprise').onclick = () => {
+    const ids = Object.keys(go), tiles = ids.map(id=>$('#'+id));
+    const end = 10 + Math.floor(Math.random()*ids.length);
+    let k = 0;
+    $('#surprise').disabled = true;
+    const step = () => {
+      tiles.forEach(t=>t.classList.remove('flash'));
+      const t = tiles[k % tiles.length]; t.classList.add('flash');
+      try{ beep(900 + (k%5)*150, .05); }catch(e){}
+      if(k >= end){ setTimeout(()=>{ try{ beep(1800,.2); }catch(e){} go[ids[k % ids.length]](); }, 650); return; }
+      k++; setTimeout(step, 70 + k*12);
+    };
+    step();
+  };
+}
+// confete flutuando no fundo
+(() => {
+  const fx = document.createElement('div'); fx.className='fx'; fx.setAttribute('aria-hidden','true');
+  const cols = ['#ff4d5e','#4fb3ff','#b07cff','#ffc53d','#3dff74'];
+  for(let i=0;i<16;i++){ const s=document.createElement('i'); s.style.left=(Math.random()*100)+'%'; s.style.background=cols[i%cols.length]; s.style.animationDelay=(-Math.random()*14)+'s'; s.style.animationDuration=(10+Math.random()*10)+'s'; fx.append(s); }
+  document.body.prepend(fx);
+})();
+
+/* =====================================================================
+   ONLINE
+   ===================================================================== */
+const token = (() => { let t = store.get('ci-token', null); if(!t){ t = Array.from(crypto.getRandomValues(new Uint8Array(12)), b=>b.toString(16).padStart(2,'0')).join(''); store.set('ci-token', t); } return t; })();
+const ON = { socket:null, code:null, state:null, list:[], step:null, stepRound:-1, deadlineAt:null, msg:'' };
+let nick = store.get('ci-nick', '');
+
+function connect(){
+  if(ON.socket) return ON.socket;
+  if(typeof io !== 'function'){ return null; }
+  const s = ON.socket = io({ transports:['websocket','polling'] });
+  s.on('connect', () => {
+    if(ON.code) s.emit('join', { code:ON.code, nick, token }, res => {
+      if(res?.error){ ON.code=null; store.set('ci-room', null); onlineMenu(res.error); }
+      else resetChat(res.chat);
+    });
+    if(screenName==='menu') s.emit('watch-rooms', true);
+    paintConn();
+  });
+  s.on('disconnect', paintConn);
+  s.on('rooms', list => { ON.list = list; if(screenName==='menu') paintRoomList(); });
+  s.on('state', st => { if(!ON.code) return; ON.state = st; ON.deadlineAt = st.remaining!=null ? Date.now()+st.remaining : null; renderRoom(); });
+  s.on('chat', m => { if(ON.code) addChat(m); });
+  s.on('kicked', msg => { ON.code=null; ON.state=null; store.set('ci-room', null); showChat(false); onlineMenu(msg); });
+  return s;
+}
+function paintConn(){
+  const el = $('#conn'); if(!el) return;
+  el.textContent = ON.socket?.connected ? '' : 'Conectando ao servidor…';
+}
+
+function onlineMenu(msg=''){
+  const s = connect();
+  showChat(false);
+  tag('Online');
+  if(!s){
+    render(`<section><h1>Jogar online</h1><p class="err">Não consegui falar com o servidor do jogo. O modo online só funciona quando o site está publicado com o servidor (veja o passo a passo do projeto).</p></section>`, 'menu-off');
+    return;
+  }
+  const pre = (location.hash.match(/^#([A-Za-z]{4})$/)||[])[1] || '';
+  let isPublic = true;
+  render(`<section>
+    <h1>Jogar online</h1>
+    ${msg?`<p class="err">${esc(msg)}</p>`:''}
+    <div class="conn" id="conn"></div>
+    <label class="lbl">Seu apelido<input type="text" id="nick" maxlength="16" placeholder="Como vão te chamar" value="${esc(nick)}" autocomplete="nickname"></label>
+    <div class="box">
+      <h2>Entrar com código</h2>
+      <form class="inline" id="joinForm"><input type="text" class="code" id="joinCode" maxlength="4" placeholder="ABCD" value="${esc(pre)}" autocomplete="off" autocapitalize="characters"><button class="ghost" type="submit">Entrar</button></form>
+    </div>
+    <div class="box">
+      <div class="row"><h2>Salas abertas</h2><span class="hint" id="roomCount"></span></div>
+      <div class="roomlist" id="roomList"><div class="empty">Procurando salas…</div></div>
+    </div>
+    <div class="box">
+      <h2>Criar sala</h2>
+      <input type="text" id="roomName" maxlength="28" placeholder="Nome da sala (opcional)">
+      <div class="seg" role="group" aria-label="Tipo de sala"><button type="button" id="tPub" aria-pressed="true">Aberta</button><button type="button" id="tPriv" aria-pressed="false">Privada</button></div>
+      <p class="hint" id="tHint">Aparece na lista de salas abertas. Qualquer um pode entrar.</p>
+      <button class="btn" id="create">Criar sala</button>
+    </div>
+    <p class="err" id="menuErr"></p>
+  </section>`, 'menu');
+  paintConn(); paintRoomList();
+  s.emit('watch-rooms', true);
+  const setT = pub => { isPublic=pub; $('#tPub').setAttribute('aria-pressed',pub); $('#tPriv').setAttribute('aria-pressed',!pub);
+    $('#tHint').textContent = pub ? 'Aparece na lista de salas abertas. Qualquer um pode entrar.' : 'Não aparece na lista. Só entra quem tiver o código.'; };
+  $('#tPub').onclick=()=>setT(true); $('#tPriv').onclick=()=>setT(false);
+  $('#create').onclick = () => {
+    if(!checkNick()) return;
+    s.emit('create', { nick, token, roomName: $('#roomName').value, isPublic }, onJoined);
+  };
+  $('#joinForm').onsubmit = e => { e.preventDefault(); joinRoom($('#joinCode').value); };
+  if(pre && nick) joinRoom(pre);
+}
+function checkNick(){
+  const v = ($('#nick')?.value || '').trim().slice(0,16);
+  if(!v){ $('#menuErr').textContent='Escolha um apelido primeiro.'; $('#nick').focus(); return false; }
+  nick = v; store.set('ci-nick', nick); return true;
+}
+function joinRoom(code){
+  code = String(code||'').trim().toUpperCase();
+  if(!checkNick()) return;
+  if(!/^[A-Z]{4}$/.test(code)){ $('#menuErr').textContent='O código tem 4 letras.'; return; }
+  ON.socket.emit('join', { code, nick, token }, onJoined);
+}
+function onJoined(res){
+  if(res?.error){ const e=$('#menuErr'); if(e) e.textContent=res.error; return; }
+  ON.socket.emit('watch-rooms', false);
+  ON.code = res.code; ON.step=null; ON.stepRound=-1;
+  store.set('ci-room', { code: res.code, at: Date.now() });
+  try{ history.replaceState(history.state, '', '#'+res.code); }catch(e){}
+  resetChat(res.chat);
+}
+function paintRoomList(){
+  const el = $('#roomList'); if(!el) return;
+  const L = ON.list || [];
+  $('#roomCount').textContent = L.length ? `${L.length} ${L.length>1?'salas':'sala'}` : '';
+  if(!L.length){ el.innerHTML = `<div class="empty">Nenhuma sala aberta agora. Crie uma!</div>`; return; }
+  el.innerHTML = L.map(r=>`<button class="roomitem" data-code="${esc(r.code)}" ${r.players>=r.max?'disabled':''}>
+    <span class="rn">${esc(r.name)}</span>
+    <span class="rs">${r.players}/${r.max} · ${r.phase==='lobby'?'esperando':'jogando'}</span>
+    <span class="go">Entrar</span></button>`).join('');
+  el.querySelectorAll('[data-code]').forEach(b=>b.onclick=()=>joinRoom(b.dataset.code));
+}
+function onlineLeave(silent){
+  if(ON.socket && ON.code) ON.socket.emit('leave');
+  ON.code=null; ON.state=null; store.set('ci-room', null);
+  try{ history.replaceState(history.state, '', location.pathname); }catch(e){}
+  showChat(false);
+  if(!silent) onlineMenu();
+}
+
+/* ---- chat ---- */
+function showChat(on){ $('#chatBox').hidden = !on; }
+function resetChat(list){ $('#chatLog').innerHTML=''; (list||[]).forEach(addChat); }
+function addChat(m){
+  const log=$('#chatLog'); const d=document.createElement('div');
+  if(m.sys){ d.className='m sys'; d.textContent=m.text; }
+  else { d.className='m'+(ON.state && m.pid===ON.state.me?' me':''); const b=document.createElement('b'); b.textContent=m.name; d.append(b, document.createTextNode(m.text)); }
+  log.append(d); while(log.children.length>80) log.firstChild.remove();
+  log.scrollTop = log.scrollHeight;
+}
+$('#chatForm').onsubmit = e => { e.preventDefault(); const v=$('#chatInput').value.trim(); if(v && ON.socket){ ON.socket.emit('chat', v); $('#chatInput').value=''; } };
+
+/* ---- countdown ---- */
+function tickCountdown(){ $$('[data-cd]').forEach(el=>{ if(!ON.deadlineAt) return; const s=Math.max(0,Math.ceil((ON.deadlineAt-Date.now())/1000)); el.textContent = `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; }); }
+setInterval(tickCountdown, 250);
+
+/* ---- room screens ---- */
+function renderRoom(){
+  const st = ON.state; if(!st) return;
+  const me = st.players.find(p=>p.pid===st.me);
+  if(st.phase==='lobby') return roomLobby(st);
+  if(st.phase==='timing'){
+    showChat(false);
+    tag(`Rodada ${st.round}`);
+    if(!st.role) return roomSpectate(st);
+    if(st.myTime!=null) return roomWait(st);
+    if(ON.stepRound!==st.round){ ON.stepRound=st.round; ON.step='role'; return roomRole(st); }
+    if(ON.step==='role' && screenName!=='o-role') return roomRole(st);
+    if(ON.step==='watch' && screenName!=='o-watch') return roomWatch(st);
+    return; // don't disturb a running stopwatch
+  }
+  if(st.phase==='voting') return roomVote(st);
+  if(st.phase==='reveal') return roomReveal(st);
+}
+function playerRows(st, extra){
+  return st.players.map(p=>{
+    const you = p.pid===st.me;
+    return `<li class="${p.connected?'':'off'}"><span class="name">${p.host?'👑 ':''}${esc(p.name)}${you?' <span class="badge">(você)</span>':''}</span>
+      ${extra?extra(p):''}
+      ${st.isHost && !you && st.phase==='lobby'?`<button class="x" data-kick="${esc(p.pid)}" aria-label="Tirar ${esc(p.name)} da sala">×</button>`:''}</li>`;
+  }).join('');
+}
+function roomLobby(st){
+  showChat(true); tag('Sala');
+  const n = st.players.filter(p=>p.connected).length;
+  const S = st.settings, H = st.isHost;
+  const link = `${location.origin}${location.pathname}#${st.code}`;
+  render(`<section>
+    <div class="panel">
+      <div class="plabel">código da sala</div>
+      <div class="bigcode">${esc(st.code)}</div>
+      <div class="row" style="justify-content:center"><span class="pill ${st.isPublic?'pub':'priv'}">${st.isPublic?'Aberta':'Privada'}</span><span class="plabel">${esc(st.name)}</span></div>
+    </div>
+    <div class="inline"><input type="text" id="lnk" readonly value="${esc(link)}" aria-label="Link da sala"><button class="ghost" id="copy">Copiar link</button></div>
+    <div class="box">
+      <div class="row"><h2>Jogadores (${n}/12)</h2>${st.round?`<span class="hint">placar ao lado</span>`:''}</div>
+      <ul class="players">${playerRows(st, p=>st.round?`<span class="badge">${p.score} pts</span>`:'')}</ul>
+    </div>
+    <div class="box">
+      ${H?`<div class="seg" role="group" aria-label="Tipo de sala"><button id="sPub" aria-pressed="${st.isPublic}">Aberta</button><button id="sPriv" aria-pressed="${!st.isPublic}">Privada</button></div>`:''}
+      <div class="row"><span>Impostores</span><div class="step">${H?`<button data-st="impostors:-1" aria-label="Menos">−</button>`:''}<output>${S.impostors}</output>${H?`<button data-st="impostors:1" aria-label="Mais">+</button>`:''}</div></div>
+      <div class="row"><span>Tempo mínimo</span><div class="step">${H?`<button data-st="minT:-1" aria-label="Menos">−</button>`:''}<output>${S.minT}s</output>${H?`<button data-st="minT:1" aria-label="Mais">+</button>`:''}</div></div>
+      <div class="row"><span>Tempo máximo</span><div class="step">${H?`<button data-st="maxT:-1" aria-label="Menos">−</button>`:''}<output>${S.maxT}s</output>${H?`<button data-st="maxT:1" aria-label="Mais">+</button>`:''}</div></div>
+      ${showTimeRow(!!S.showTime, !H)}
+    </div>
+    ${H ? `<button class="btn" id="start" ${n<3?'disabled':''}>${n<3?`Esperando jogadores (mín. 3)`:'Começar rodada'}</button><p class="err" id="startErr"></p>`
+        : `<p class="center">Esperando o anfitrião começar…</p>`}
+    <button class="ghost" id="leave">Sair da sala</button>
+  </section>`, 'o-lobby');
+  $('#copy').onclick = async () => { try{ await navigator.clipboard.writeText(link); $('#copy').textContent='Copiado!'; }catch(e){ $('#lnk').select(); } };
+  $('#leave').onclick = () => onlineLeave(false);
+  $$('[data-kick]').forEach(b=>b.onclick=()=>ON.socket.emit('kick', b.dataset.kick));
+  if(H){
+    $('#sPub').onclick=()=>ON.socket.emit('settings',{isPublic:true});
+    $('#sPriv').onclick=()=>ON.socket.emit('settings',{isPublic:false});
+    bindShow(v=>ON.socket.emit('settings',{showTime:v}));
+    $$('[data-st]').forEach(b=>b.onclick=()=>{ const [k,d]=b.dataset.st.split(':'); ON.socket.emit('settings', {[k]: S[k] + +d}); });
+    $('#start').onclick = () => ON.socket.emit('start', null, r => { if(r?.error) $('#startErr').textContent=r.error; });
+  }
+}
+function roomRole(st){
+  const r = st.role;
+  render(`<section>
+    ${r.impostor
+      ? `<div class="panel">${led('--.--','red')}<div class="plabel">sem tempo pra você</div></div><div class="role imp">Você é o IMPOSTOR</div>
+         <p class="center">${r.impCount>1?`Tem ${r.impCount} impostores nesta rodada. `:''}Você não sabe o tempo. Chute algo que pareça normal. Se ficar muito longe dos outros, vão te descobrir.</p>`
+      : `<div class="panel">${led(ledTime(r.target))}<div class="plabel">seu tempo-alvo · segundos</div></div>
+         <p class="center">Decore o tempo. Depois o visor apaga e você para o cronômetro de cabeça.</p>`}
+    <button class="btn" id="ready">Entendi, ir pro cronômetro</button>
+    <p class="center hint">Tempo limite da rodada: <span class="cd" data-cd></span></p>
+  </section>`, 'o-role');
+  $('#ready').onclick = () => { ON.step='watch'; roomWatch(st); };
+}
+function roomWatch(st){
+  const show = !!st.settings.showTime;
+  const sw = stopwatch({ pre: led('00.00'), label:'quando quiser, aperte', show, onStop: ms => {
+    ON.socket.emit('time', ms);
+    if(!show) $('#panel').innerHTML = led('--.--') + `<div class="plabel">enviado</div>`;
+  }});
+  render(`<section>${sw.html}<p class="center hint">Tempo limite: <span class="cd" data-cd></span></p></section>`, 'o-watch');
+  sw.bind();
+}
+function roomWait(st){
+  const ps = st.players.filter(p=>p.inRound);
+  const done = ps.filter(p=>p.done).length;
+  render(`<section>
+    <div class="panel">${led('--.--')}<div class="plabel">seu tempo foi enviado</div></div>
+    <h1>Esperando os outros</h1>
+    <p>${done} de ${ps.length} já pararam o cronômetro. Limite: <span class="cd" data-cd></span></p>
+    <div class="box"><ul class="players">${playerRows(st, p=>p.inRound?`<span class="badge ${p.done?'ok':''}">${p.done?'pronto':'jogando…'}</span>`:`<span class="badge">próxima</span>`)}</ul></div>
+  </section>`, 'o-wait');
+}
+function roomSpectate(st){
+  render(`<section>
+    <div class="panel">${led('--.--','blink')}<div class="plabel">rodada em andamento</div></div>
+    <h1>Você entra na próxima rodada</h1>
+    <p>Essa rodada começou antes de você chegar. Assim que acabar, o anfitrião começa outra e você joga.</p>
+  </section>`, 'o-spec');
+}
+function roomVote(st){
+  showChat(true); tag(`Rodada ${st.round} · votação`);
+  const ps = st.players.filter(p=>p.inRound);
+  const voted = ps.filter(p=>p.voted).length;
+  const rows = ps.map(p=>({ name:p.name, ms: st.times?.[p.pid] ?? null })).sort((a,b)=>(a.ms??1e9)-(b.ms??1e9));
+  const can = !!st.role && st.myVote==null;
+  const votedName = st.myVote==='skip' ? 'ninguém (pulou)' : esc(st.players.find(p=>p.pid===st.myVote)?.name || '');
+  render(`<section>
+    <h1>Quem é o impostor?</h1>
+    <div class="box"><div class="row"><h2>Tempos de todo mundo</h2><span class="cd" data-cd></span></div>${bars(rows,null)}</div>
+    <p>Conversem aqui embaixo e votem. Quem tiver mais votos é eliminado. Empate ou ninguém eliminado: o impostor vence.</p>
+    ${st.role ? `<div class="vote">${ps.filter(p=>p.pid!==st.me).map(p=>`<button data-v="${esc(p.pid)}" aria-pressed="${st.myVote===p.pid}" ${can?'':'disabled'}>${esc(p.name)}</button>`).join('')}
+      <button class="skip" data-v="skip" aria-pressed="${st.myVote==='skip'}" ${can?'':'disabled'}>Pular voto</button></div>` : `<p class="center">Você está assistindo esta rodada.</p>`}
+    <p class="center hint">${st.myVote!=null?`Você votou em ${votedName}. `:''}${voted} de ${ps.length} votaram.</p>
+  </section>`, 'o-vote');
+  $$('[data-v]').forEach(b=>b.onclick=()=>{ if(can) ON.socket.emit('vote', b.dataset.v); });
+}
+function roomReveal(st){
+  showChat(true); tag(`Rodada ${st.round} · resultado`);
+  const R = st.reveal; const byPid = Object.fromEntries(st.players.map(p=>[p.pid,p]));
+  const nm = pid => byPid[pid]?.name || 'alguém que saiu';
+  const imps = R.impostors.map(pid=>`<strong style="color:var(--imp)">${esc(nm(pid))}</strong>`).join(' e ');
+  const elimTxt = R.eliminated ? `${esc(nm(R.eliminated))} foi eliminado.` : R.tie ? 'Deu empate, ninguém foi eliminado.' : 'Ninguém foi eliminado.';
+  const ps = st.players.filter(p=>p.inRound || st.times?.[p.pid]!=null);
+  const rows = ps.map(p=>({ name:p.name, ms: st.times?.[p.pid] ?? null, cls: R.impostors.includes(p.pid)?'imp':'crew' })).sort((a,b)=>(a.ms??1e9)-(b.ms??1e9));
+  const tally = Object.entries(R.tally).sort((a,b)=>b[1]-a[1]).map(([pid,c])=>`${esc(nm(pid))}: ${c}`).join(' · ');
+  render(`<section>
+    <div class="verdict" style="color:var(${R.caught?'--crew':'--imp'})">${R.caught?'Impostor eliminado! Tripulação vence.':'O impostor venceu!'}</div>
+    <p class="center">${elimTxt} ${R.impostors.length>1?'Os impostores eram':'O impostor era'} ${imps}.</p>
+    <div class="panel">${led(ledTime(R.target))}<div class="plabel">tempo-alvo</div></div>
+    <div class="box">${bars(rows, R.target)}
+      ${R.best?`<p class="hint">Mais perto do alvo: <strong style="color:var(--fg)">${esc(nm(R.best))}</strong> (${fmt(R.bestDiff)} de diferença) · +1</p>`:''}
+      ${tally?`<p class="hint">Votos: ${tally}</p>`:''}</div>
+    <div class="box"><h2>Placar</h2><ul class="score">${[...st.players].sort((a,b)=>b.score-a.score).map(p=>`<li><span>${esc(p.name)}${p.pid===st.me?' (você)':''}</span><span>${p.score}</span></li>`).join('')}</ul></div>
+    ${st.isHost ? `<button class="btn" id="again">Próxima rodada</button><p class="err" id="startErr"></p><button class="ghost" id="lobby">Voltar pro lobby</button>`
+                : `<p class="center">Esperando o anfitrião começar a próxima…</p>`}
+    <button class="ghost" id="leave">Sair da sala</button>
+  </section>`, 'o-reveal');
+  $('#leave').onclick = () => onlineLeave(false);
+  if(st.isHost){
+    $('#again').onclick = () => ON.socket.emit('start', null, r => { if(r?.error) $('#startErr').textContent=r.error; });
+    $('#lobby').onclick = () => ON.socket.emit('lobby');
+  }
+}
+
+/* =====================================================================
+   MESMO CELULAR
+   ===================================================================== */
+const S = Object.assign({ players:['Ana','Bruno','Carla','Diego','Leo'], impostors:1, minT:3, maxT:15, scores:{}, round:0 }, store.get('ci-config', {}) || {});
+S.scores = S.scores || {};
+const persist = () => store.set('ci-config', S);
+let G = null;
+
+function localSetup(){
+  tag('Mesmo celular');
+  const maxImp = Math.max(1, Math.floor((S.players.length-1)/2));
+  S.impostors = Math.min(S.impostors, maxImp);
+  render(`<section>
+    <h1>Todo mundo sabe o tempo. Menos o impostor.</h1>
+    <div class="box">
+      <h2>Jogadores (${S.players.length})</h2>
+      <ul class="players">${S.players.map((p,i)=>`<li><span class="n">${String(i+1).padStart(2,'0')}</span><span class="name">${esc(p)}</span><button class="x" aria-label="Remover ${esc(p)}" data-rm="${i}">×</button></li>`).join('')}</ul>
+      <form class="add" id="addForm"><input type="text" id="newName" placeholder="Nome do jogador" maxlength="18" autocomplete="off"><button class="ghost" type="submit">Adicionar</button></form>
+    </div>
+    <div class="box">
+      <div class="row"><span>Impostores</span><div class="step"><button data-st="impostors:-1" aria-label="Menos">−</button><output>${S.impostors}</output><button data-st="impostors:1" aria-label="Mais">+</button></div></div>
+      <div class="row"><span>Tempo mínimo</span><div class="step"><button data-st="minT:-1" aria-label="Menos">−</button><output>${S.minT}s</output><button data-st="minT:1" aria-label="Mais">+</button></div></div>
+      <div class="row"><span>Tempo máximo</span><div class="step"><button data-st="maxT:-1" aria-label="Menos">−</button><output>${S.maxT}s</output><button data-st="maxT:1" aria-label="Mais">+</button></div></div>
+      <p class="hint">O tempo secreto é sorteado entre ${S.minT} e ${S.maxT} segundos.</p>
+      ${showTimeRow(!!S.showTime, false)}
+    </div>
+    <button class="btn" id="start" ${S.players.length<3?'disabled':''}>${S.players.length<3?'Precisa de 3 jogadores':'Começar rodada'}</button>
+    ${Object.keys(S.scores).length?`<button class="ghost" id="reset">Zerar placar</button>`:''}
+  </section>`, 'l-setup');
+  $('#addForm').onsubmit = e => { e.preventDefault(); const v=$('#newName').value.trim(); if(v && !S.players.includes(v)){S.players.push(v);persist();localSetup();$('#newName').focus();} };
+  $$('[data-rm]').forEach(b=>b.onclick=()=>{S.players.splice(+b.dataset.rm,1);persist();localSetup();});
+  $$('[data-st]').forEach(b=>b.onclick=()=>{
+    const [k,d]=b.dataset.st.split(':'); S[k]+= +d;
+    S.impostors=Math.max(1,Math.min(S.impostors,maxImp));
+    S.minT=Math.max(1,Math.min(S.minT,S.maxT-1)); S.maxT=Math.max(S.minT+1,Math.min(S.maxT,60));
+    persist(); localSetup();
+  });
+  bindShow(v=>{ S.showTime=v; persist(); localSetup(); });
+  $('#start').onclick = localStart;
+  const r=$('#reset'); if(r) r.onclick=()=>{S.scores={};S.round=0;persist();localSetup();};
+}
+function localStart(){
+  S.round++; persist();
+  G = { target: randTarget(S.minT,S.maxT), order: shuffle([...S.players]), imps:new Set(shuffle([...S.players]).slice(0,S.impostors)), times:{}, idx:0, vote:null };
+  localPass();
+}
+function localPass(){
+  tag(`Rodada ${S.round} · ${G.idx+1}/${G.order.length}`);
+  const p = G.order[G.idx];
+  render(`<section class="center">
+    <h2>Passe o celular para</h2>
+    <div class="who">${esc(p)}</div>
+    <p>Ninguém mais pode olhar a tela.</p>
+    <button class="btn" id="go">Sou ${esc(p)}, mostrar meu tempo</button>
+  </section>`, 'l-pass');
+  $('#go').onclick = localSecret;
+}
+function localSecret(){
+  const p = G.order[G.idx], imp = G.imps.has(p);
+  render(`<section>
+    ${imp
+      ? `<div class="panel">${led('--.--','red')}<div class="plabel">sem tempo pra você</div></div><div class="role imp">Você é o IMPOSTOR</div>
+         <p class="center">Você não sabe o tempo. Chute algo que pareça normal. Se ficar muito longe dos outros, vão te descobrir.</p>`
+      : `<div class="panel">${led(ledTime(G.target))}<div class="plabel">seu tempo-alvo · segundos</div></div>
+         <p class="center">Decore o tempo. Depois o visor apaga e você para o cronômetro de cabeça.</p>`}
+    <button class="btn" id="ready">Entendi, esconder</button>
+  </section>`, 'l-secret');
+  $('#ready').onclick = localTimer;
+}
+function localTimer(){
+  const p = G.order[G.idx];
+  const show = !!S.showTime;
+  const sw = stopwatch({ pre: led('00.00'), label: `vez de ${esc(p)}`, show, onStop: ms => {
+    G.times[p]=ms; G.idx++;
+    if(!show) $('#panel').innerHTML = led('--.--') + `<div class="plabel">registrado</div>`;
+    setTimeout(()=> G.idx<G.order.length ? localPass() : localResults(), show?1500:900);
+  }});
+  render(`<section>${sw.html}</section>`, 'l-timer');
+  sw.bind();
+}
+function localBars(showTarget){
+  const rows = S.players.filter(p=>p in G.times).sort((a,b)=>G.times[a]-G.times[b])
+    .map(p=>({ name:p, ms:G.times[p], cls: showTarget ? (G.imps.has(p)?'imp':'crew') : '' }));
+  return bars(rows, showTarget ? G.target : null);
+}
+function localResults(){
+  tag(`Rodada ${S.round} · votação`);
+  render(`<section>
+    <h1>Quem é o impostor?</h1>
+    <div class="box"><h2>Tempos de todo mundo</h2>${localBars(false)}</div>
+    <p>Discutam quem ficou longe demais e votem. Quem tiver mais votos é eliminado. Se não for o impostor, o impostor ganha.</p>
+    <div class="vote">${S.players.map(p=>`<button data-v="${esc(p)}" aria-pressed="${G.vote===p}">${esc(p)}</button>`).join('')}</div>
+    <button class="btn red" id="reveal" ${G.vote?'':'disabled'}>${G.vote?'Eliminar '+esc(G.vote):'Escolha quem eliminar'}</button>
+  </section>`, 'l-vote');
+  $$('[data-v]').forEach(b=>b.onclick=()=>{G.vote=b.dataset.v;localResults();});
+  $('#reveal').onclick = localReveal;
+}
+function localReveal(){
+  tag(`Rodada ${S.round} · resultado`);
+  const caught = G.imps.has(G.vote);
+  const add=(p,n)=>S.scores[p]=(S.scores[p]||0)+n;
+  S.players.forEach(p=>S.scores[p]=S.scores[p]||0);
+  if(caught) S.players.filter(p=>!G.imps.has(p)).forEach(p=>add(p,1));
+  else G.imps.forEach(p=>add(p,3));
+  const crew = S.players.filter(p=>!G.imps.has(p));
+  const best = crew.reduce((a,b)=>Math.abs(G.times[b]-G.target)<Math.abs(G.times[a]-G.target)?b:a);
+  add(best,1); persist();
+  const imps=[...G.imps].map(esc).join(' e ');
+  render(`<section>
+    <div class="verdict" style="color:var(${caught?'--crew':'--imp'})">${caught?'Impostor eliminado! Tripulação vence.':'O impostor venceu!'}</div>
+    <p class="center">Vocês eliminaram ${esc(G.vote)}. ${G.imps.size>1?'Os impostores eram':'O impostor era'} <strong style="color:var(--imp)">${imps}</strong>.</p>
+    <div class="panel">${led(ledTime(G.target))}<div class="plabel">tempo-alvo</div></div>
+    <div class="box">${localBars(true)}
+      <p class="hint">Mais perto do alvo: <strong style="color:var(--fg)">${esc(best)}</strong> (${fmt(Math.abs(G.times[best]-G.target))} de diferença) · +1</p></div>
+    <div class="box"><h2>Placar</h2><ul class="score">${[...S.players].sort((a,b)=>S.scores[b]-S.scores[a]).map(p=>`<li><span>${esc(p)}</span><span>${S.scores[p]}</span></li>`).join('')}</ul></div>
+    <button class="btn" id="again">Próxima rodada</button>
+    <button class="ghost" id="edit">Mudar jogadores</button>
+  </section>`, 'l-reveal');
+  $('#again').onclick=localStart; $('#edit').onclick=localSetup;
+}
+
+/* =====================================================================
+   IMPOSTOR DA PALAVRA (mesmo celular)
+   ===================================================================== */
+const FUT = ['Times','Jogadores','Seleções'];
+const WORDS = {
+  'Seleções': ['Brasil','Argentina','França','Alemanha','Espanha','Portugal','Inglaterra','Itália','Holanda','Uruguai','Croácia','Bélgica','México','Estados Unidos','Japão','Marrocos','Colômbia','Chile'],
+  'Times': ['Corinthians','Palmeiras','Flamengo','São Paulo','Santos','Vasco','Grêmio','Internacional','Cruzeiro','Atlético Mineiro','Botafogo','Fluminense','Real Madrid','Barcelona','Manchester City','Liverpool','PSG','Bayern de Munique','Juventus','Milan','Chelsea','Manchester United'],
+  'Jogadores': ['Cristiano Ronaldo','Messi','Neymar','Mbappé','Vinícius Júnior','Haaland','Pelé','Ronaldinho','Ronaldo Fenômeno','Kaká','Rodrygo','Endrick','Lamine Yamal','Modrić','Benzema','Salah','Harry Kane','Bellingham','Lewandowski','Raphinha','Casemiro','Romário'],
+  'Animais': ['Cachorro','Gato','Elefante','Girafa','Leão','Tubarão','Pinguim','Macaco','Cavalo','Coruja','Tartaruga','Cobra','Abelha','Vaca','Golfinho','Jacaré'],
+  'Comidas': ['Pizza','Hambúrguer','Brigadeiro','Feijoada','Pipoca','Sorvete','Coxinha','Pastel','Lasanha','Açaí','Pão de queijo','Chocolate','Macarrão','Churrasco','Bolo','Banana'],
+  'Lugares': ['Praia','Escola','Hospital','Shopping','Cinema','Aeroporto','Igreja','Academia','Fazenda','Padaria','Estádio','Biblioteca','Supermercado','Parque','Zoológico','Restaurante'],
+  'Objetos': ['Celular','Guarda-chuva','Escova de dente','Travesseiro','Relógio','Óculos','Mochila','Tesoura','Geladeira','Controle remoto','Vela','Espelho','Chave','Fone de ouvido','Lápis','Copo'],
+  'Profissões': ['Médico','Professor','Bombeiro','Policial','Cozinheiro','Piloto','Dentista','Jogador de futebol','Cantor','Mecânico','Astronauta','Veterinário','Youtuber','Motorista','Padeiro','Pintor'],
+  'Esportes': ['Futebol','Basquete','Vôlei','Natação','Skate','Surfe','Tênis','Boxe','Corrida','Ciclismo','Judô','Xadrez','Handebol','Ginástica','Pingue-pongue','Golfe'],
+  'Transportes': ['Avião','Ônibus','Bicicleta','Moto','Navio','Trem','Helicóptero','Metrô','Patinete','Foguete','Caminhão','Táxi','Barco','Submarino','Carro','Balão'],
+  'Natureza': ['Chuva','Vulcão','Floresta','Arco-íris','Montanha','Rio','Neve','Deserto','Sol','Lua','Cachoeira','Trovão','Flor','Árvore','Estrela','Vento'],
+  'Diversão': ['Videogame','Futebol de botão','Montanha-russa','Karaokê','Festa de aniversário','Esconde-esconde','Quebra-cabeça','Pipa','Circo','Piscina','Churrasco de família','Show','Cartas','Dominó','Acampamento','Fogos de artifício'],
+};
+const W = Object.assign({ impostors:1, hint:true, rounds:3, cats:Object.keys(WORDS), scores:{}, round:0 }, store.get('ci-word', {}) || {});
+W.cats = (W.cats||[]).filter(c=>WORDS[c]); if(!W.cats.length) W.cats = Object.keys(WORDS);
+// temas novos entram marcados pra quem já tinha jogado antes
+W.seen = W.seen || [...W.cats];
+Object.keys(WORDS).forEach(c=>{ if(!W.seen.includes(c)){ W.seen.push(c); if(!W.cats.includes(c)) W.cats.push(c); } });
+W.scores = W.scores || {};
+const wPersist = () => store.set('ci-word', W);
+let WG = null;
+
+function wordSetup(){
+  tag('Palavra');
+  const maxImp = Math.max(1, Math.floor((S.players.length-1)/2));
+  W.impostors = Math.min(W.impostors, maxImp);
+  render(`<section>
+    <h1>Todo mundo sabe a palavra. Menos o impostor.</h1>
+    <div class="box">
+      <h2>Jogadores (${S.players.length})</h2>
+      <ul class="players">${S.players.map((p,i)=>`<li><span class="n">${String(i+1).padStart(2,'0')}</span><span class="name">${esc(p)}</span><button class="x" aria-label="Remover ${esc(p)}" data-rm="${i}">×</button></li>`).join('')}</ul>
+      <form class="add" id="addForm"><input type="text" id="newName" placeholder="Nome do jogador" maxlength="18" autocomplete="off"><button class="ghost" type="submit">Adicionar</button></form>
+    </div>
+    <div class="box">
+      <div class="row"><span>Impostores</span><div class="step"><button data-st="impostors:-1" aria-label="Menos">−</button><output>${W.impostors}</output><button data-st="impostors:1" aria-label="Mais">+</button></div></div>
+      <div class="row"><span>Rodadas de dicas</span><div class="step"><button data-st="rounds:-1" aria-label="Menos">−</button><output>${W.rounds}</output><button data-st="rounds:1" aria-label="Mais">+</button></div></div>
+      <div class="row"><span>Impostor recebe dica</span><div class="seg" role="group" aria-label="Impostor recebe dica" style="min-width:150px"><button type="button" data-hint="0" aria-pressed="${!W.hint}">Não</button><button type="button" data-hint="1" aria-pressed="${W.hint}">Sim</button></div></div>
+      <p class="hint">${W.hint?'O impostor fica sabendo o tema da palavra (por exemplo, "Animais"). Fica mais fácil disfarçar.':'O impostor não sabe nada. Tem que adivinhar pelas dicas dos outros.'}</p>
+    </div>
+    <div class="box">
+      <div class="row"><h2>Temas das palavras</h2><div class="chips"><button class="chip" id="futCats" type="button">⚽ Só futebol</button><button class="chip" id="allCats" type="button">${W.cats.length===Object.keys(WORDS).length?'Tirar todos':'Marcar todos'}</button></div></div>
+      <div class="chips">${Object.keys(WORDS).map(c=>`<button type="button" class="chip" data-cat="${esc(c)}" aria-pressed="${W.cats.includes(c)}">${esc(c)}</button>`).join('')}</div>
+    </div>
+    <button class="btn" id="start" ${S.players.length<3||!W.cats.length?'disabled':''}>${S.players.length<3?'Precisa de 3 jogadores':!W.cats.length?'Escolha pelo menos um tema':'Começar rodada'}</button>
+    <details class="box rules"><summary>Como jogar</summary><ol>
+      <li>Passe o celular. Cada um vê a palavra secreta. O impostor vê que é o impostor${W.hint?' e o tema':''}.</li>
+      <li>Em cada rodada, cada um fala uma palavra que tenha a ver com a secreta. Ex.: palavra "Cachorro", dica "ração".</li>
+      <li>O impostor tem que inventar uma dica que não entregue ele.</li>
+      <li>Depois de ${W.rounds} ${W.rounds>1?'rodadas':'rodada'}, votem pra eliminar alguém. Eliminaram o impostor: tripulação vence. Senão, o impostor vence.</li>
+    </ol></details>
+    ${Object.keys(W.scores).length?`<button class="ghost" id="reset">Zerar placar</button>`:''}
+  </section>`, 'w-setup');
+  $('#addForm').onsubmit = e => { e.preventDefault(); const v=$('#newName').value.trim(); if(v && !S.players.includes(v)){S.players.push(v);persist();wordSetup();$('#newName').focus();} };
+  $$('[data-rm]').forEach(b=>b.onclick=()=>{S.players.splice(+b.dataset.rm,1);persist();wordSetup();});
+  $$('[data-st]').forEach(b=>b.onclick=()=>{
+    const [k,d]=b.dataset.st.split(':'); W[k]+= +d;
+    W.impostors=Math.max(1,Math.min(W.impostors,maxImp)); W.rounds=Math.max(1,Math.min(5,W.rounds));
+    wPersist(); wordSetup();
+  });
+  $$('[data-hint]').forEach(b=>b.onclick=()=>{ W.hint = b.dataset.hint==='1'; wPersist(); wordSetup(); });
+  $$('[data-cat]').forEach(b=>b.onclick=()=>{ const c=b.dataset.cat; W.cats = W.cats.includes(c) ? W.cats.filter(x=>x!==c) : [...W.cats, c]; wPersist(); wordSetup(); });
+  $('#futCats').onclick = () => { W.cats = [...FUT]; wPersist(); wordSetup(); };
+  $('#allCats').onclick = () => { W.cats = W.cats.length===Object.keys(WORDS).length ? [] : Object.keys(WORDS); wPersist(); wordSetup(); };
+  $('#start').onclick = wordStart;
+  const r=$('#reset'); if(r) r.onclick=()=>{W.scores={};W.round=0;wPersist();wordSetup();};
+}
+function wordStart(){
+  W.round++; wPersist();
+  const cat = W.cats[Math.floor(Math.random()*W.cats.length)];
+  const list = WORDS[cat];
+  let word = list[Math.floor(Math.random()*list.length)];
+  if(WG && WG.word===word && list.length>1) word = list[(list.indexOf(word)+1)%list.length];
+  const order = shuffle([...S.players]);
+  WG = { cat, word, imps:new Set(shuffle([...S.players]).slice(0,W.impostors)), order, idx:0,
+         talk: shuffle([...S.players]), cr:1, turn:0, clues:Object.fromEntries(S.players.map(p=>[p,[]])), vote:null };
+  wordPass();
+}
+function wordPass(){
+  tag(`Palavra · ${WG.idx+1}/${WG.order.length}`);
+  const p = WG.order[WG.idx];
+  render(`<section class="center">
+    <h2>Passe o celular para</h2>
+    <div class="who">${esc(p)}</div>
+    <p>Ninguém mais pode olhar a tela.</p>
+    <button class="btn" id="go">Sou ${esc(p)}, mostrar minha palavra</button>
+  </section>`, 'w-pass');
+  $('#go').onclick = wordSecret;
+}
+function wordSecret(){
+  const p = WG.order[WG.idx], imp = WG.imps.has(p);
+  render(`<section>
+    <div class="panel" style="padding-block:28px">
+      <div class="plabel">${imp?'você é o':'a palavra secreta é'}</div>
+      <div class="secret ${imp?'imp':''}">${imp?'IMPOSTOR':esc(WG.word)}</div>
+      ${imp && W.hint ? `<div class="plabel">dica · tema: ${esc(WG.cat)}</div>` : ''}
+    </div>
+    <p class="center">${imp
+      ? (W.hint ? `Você não sabe a palavra, só que o tema é <strong style="color:var(--fg)">${esc(WG.cat)}</strong>. Preste atenção nas dicas dos outros e invente uma que combine.`
+                : 'Você não sabe a palavra nem o tema. Preste atenção nas dicas dos outros e tente se misturar.')
+      : 'Decore a palavra. Nas dicas, fale algo que tenha a ver, mas sem entregar fácil demais pro impostor.'}</p>
+    <button class="btn" id="ready">Entendi, esconder</button>
+  </section>`, 'w-secret');
+  $('#ready').onclick = () => { WG.idx++; WG.idx < WG.order.length ? wordPass() : wordClues(); };
+}
+function clueTable(highlight, showImp){
+  const n = W.rounds;
+  return `<div class="cluewrap"><table class="cluetab"><thead><tr><th>Jogador</th>${Array.from({length:n},(_,i)=>`<th>Rodada ${i+1}</th>`).join('')}</tr></thead><tbody>
+    ${WG.talk.map(p=>`<tr class="${p===highlight?'now':''} ${showImp&&WG.imps.has(p)?'imp':''}"><td>${esc(p)}</td>${Array.from({length:n},(_,i)=>`<td>${WG.clues[p][i]!=null?(esc(WG.clues[p][i])||'·'):''}</td>`).join('')}</tr>`).join('')}
+  </tbody></table></div>`;
+}
+function wordClues(){
+  const p = WG.talk[WG.turn];
+  tag(`Dicas · rodada ${WG.cr}/${W.rounds}`);
+  render(`<section>
+    <h2 class="center">Rodada ${WG.cr} de ${W.rounds} · ${WG.turn+1}º a falar</h2>
+    <div class="who">${esc(p)}</div>
+    <p class="center">Fale em voz alta <strong style="color:var(--fg)">uma palavra</strong> que tenha a ver com a palavra secreta.</p>
+    <form class="inline" id="clueForm"><input type="text" id="clue" maxlength="24" placeholder="Anotar a dica (opcional)" autocomplete="off"><button class="btn" type="submit" style="width:auto;padding-inline:20px">Próximo</button></form>
+    <div class="box"><h2>Dicas até agora</h2>${clueTable(p,false)}</div>
+    <button class="ghost" id="skipVote">Ir direto pra votação</button>
+  </section>`, 'w-clue');
+  $('#clueForm').onsubmit = e => {
+    e.preventDefault();
+    WG.clues[p][WG.cr-1] = $('#clue').value.trim();
+    WG.turn++;
+    if(WG.turn >= WG.talk.length){ WG.turn=0; WG.cr++; }
+    WG.cr > W.rounds ? wordVote() : wordClues();
+  };
+  $('#skipVote').onclick = wordVote;
+}
+function wordVote(){
+  tag(`Palavra · votação`);
+  render(`<section>
+    <h1>Quem é o impostor?</h1>
+    <div class="box"><h2>Dicas de todo mundo</h2>${clueTable(null,false)}</div>
+    <p>Conversem sobre quem deu as dicas mais estranhas e votem. Quem tiver mais votos é eliminado.</p>
+    <div class="vote">${S.players.map(p=>`<button data-v="${esc(p)}" aria-pressed="${WG.vote===p}">${esc(p)}</button>`).join('')}</div>
+    <button class="btn red" id="reveal" ${WG.vote?'':'disabled'}>${WG.vote?'Eliminar '+esc(WG.vote):'Escolha quem eliminar'}</button>
+  </section>`, 'w-vote');
+  $$('[data-v]').forEach(b=>b.onclick=()=>{ WG.vote=b.dataset.v; wordVote(); });
+  $('#reveal').onclick = wordReveal;
+}
+function wordReveal(){
+  tag('Palavra · resultado');
+  const caught = WG.imps.has(WG.vote);
+  const add=(p,n)=>W.scores[p]=(W.scores[p]||0)+n;
+  S.players.forEach(p=>W.scores[p]=W.scores[p]||0);
+  if(caught) S.players.filter(p=>!WG.imps.has(p)).forEach(p=>add(p,1));
+  else WG.imps.forEach(p=>add(p,3));
+  wPersist();
+  const imps=[...WG.imps].map(esc).join(' e ');
+  render(`<section>
+    <div class="verdict" style="color:var(${caught?'--crew':'--imp'})">${caught?'Impostor eliminado! Tripulação vence.':'O impostor venceu!'}</div>
+    <p class="center">Vocês eliminaram ${esc(WG.vote)}. ${WG.imps.size>1?'Os impostores eram':'O impostor era'} <strong style="color:var(--imp)">${imps}</strong>.</p>
+    <div class="panel" style="padding-block:24px"><div class="plabel">a palavra era</div><div class="secret">${esc(WG.word)}</div><div class="plabel">tema: ${esc(WG.cat)}</div></div>
+    <div class="box"><h2>Dicas</h2>${clueTable(null,true)}</div>
+    <div class="box"><h2>Placar</h2><ul class="score">${[...S.players].sort((a,b)=>(W.scores[b]||0)-(W.scores[a]||0)).map(p=>`<li><span>${esc(p)}</span><span>${W.scores[p]||0}</span></li>`).join('')}</ul></div>
+    <button class="btn" id="again">Próxima rodada</button>
+    <button class="ghost" id="edit">Mudar jogadores ou temas</button>
+  </section>`, 'w-reveal');
+  $('#again').onclick=wordStart; $('#edit').onclick=wordSetup;
+}
+
+/* =====================================================================
+   PÊNALTIS DO CRONÔMETRO (1 contra 1)
+   ===================================================================== */
+const P = Object.assign({ a: S.players[0]||'Jogador 1', b: S.players[1]||'Jogador 2', minT:3, maxT:10, show:false }, store.get('ci-pen', {}) || {});
+const pPersist = () => store.set('ci-pen', P);
+let PG = null;
+const KICKS = 5;
+
+function penBoard(highlight){
+  const slots = Math.max(KICKS, PG.goals[0].length, PG.goals[1].length);
+  const row = i => `<div class="penrow"><span class="pn">${esc(PG.names[i])}</span>
+    <div class="balls">${Array.from({length:slots},(_,k)=>{ const g=PG.goals[i][k];
+      return `<span class="ball ${g==null?(k===PG.goals[i].length&&highlight?'now':''):g?'g':'m'}">${g==null?'':g?'⚽':'✕'}</span>`; }).join('')}</div>
+    <span class="pg">${PG.goals[i].filter(Boolean).length}</span></div>`;
+  return `<div class="box pens">${row(0)}${row(1)}</div>`;
+}
+function penSetup(){
+  tag('Pênaltis');
+  render(`<section>
+    <h1>Disputa de pênaltis no cronômetro</h1>
+    <p>Cada rodada sorteia um tempo e os dois param o cronômetro escondido. Quem errar por menos faz o gol. Se os dois errarem exatamente igual, os dois marcam. Cinco cobranças pra cada, e se empatar no placar vai pras alternadas.</p>
+    <div class="box">
+      <h2>Jogadores</h2>
+      <div class="name-in"><input type="text" id="pa" maxlength="16" value="${esc(P.a)}" aria-label="Jogador 1"><input type="text" id="pb" maxlength="16" value="${esc(P.b)}" aria-label="Jogador 2"></div>
+    </div>
+    <div class="box">
+      <div class="row"><span>Tempo sorteado entre</span><div class="step"><button data-r="-1" aria-label="Diminuir">−</button><output>${P.minT}–${P.maxT}s</output><button data-r="1" aria-label="Aumentar">+</button></div></div>
+      ${showTimeRow(!!P.show, false)}
+    </div>
+    <button class="btn" id="start">Começar a disputa</button>
+  </section>`, 'p-setup');
+  const save = () => { P.a = $('#pa').value.trim() || 'Jogador 1'; P.b = $('#pb').value.trim() || 'Jogador 2'; pPersist(); };
+  $$('[data-r]').forEach(b=>b.onclick=()=>{ save(); P.maxT=Math.max(P.minT+3,Math.min(60,P.maxT+(+b.dataset.r)*5)); pPersist(); penSetup(); });
+  bindShow(v=>{ save(); P.show=v; pPersist(); penSetup(); });
+  $('#start').onclick = () => {
+    save();
+    if(P.a.toLowerCase()===P.b.toLowerCase()) P.b += ' 2';
+    PG = { names:[P.a,P.b], goals:[[],[]], round:0 };
+    penRound();
+  };
+}
+function penRound(){
+  PG.round++;
+  PG.target = randTarget(P.minT, P.maxT);
+  PG.times = [null,null];
+  PG.order = PG.round % 2 ? [0,1] : [1,0]; // alterna quem cobra primeiro
+  PG.k = 0;
+  penReady();
+}
+function penLabel(){ return PG.round<=KICKS ? `Cobrança ${PG.round} de ${KICKS}` : `Alternadas · cobrança ${PG.round}`; }
+function penReady(){
+  const i = PG.order[PG.k];
+  tag(penLabel());
+  render(`<section>
+    ${penBoard(true)}
+    <h2 class="center">${penLabel()}</h2>
+    <div class="panel">${led(ledTime(PG.target))}<div class="plabel">tempo-alvo desta cobrança</div></div>
+    ${PG.k===1?`<p class="center">${esc(PG.names[PG.order[0]])} já cobrou. O tempo dele fica escondido até o fim.</p>`:''}
+    <div class="who">${esc(PG.names[i])}</div>
+    <button class="btn" id="go">Sou ${esc(PG.names[i])}, vou cobrar</button>
+  </section>`, 'p-ready');
+  $('#go').onclick = () => penKick(i);
+}
+function penKick(i){
+  const sw = stopwatch({ pre: led(ledTime(PG.target)), label:`alvo · vez de ${esc(PG.names[i])}`, show: !!P.show, onStop: ms => {
+    PG.times[i] = ms; PG.k++;
+    setTimeout(()=> PG.k<2 ? penReady() : penResult(), P.show?1200:600);
+  }});
+  render(`<section>${sw.html}</section>`, 'p-kick');
+  sw.bind();
+}
+function penResult(){
+  const d = PG.times.map(t=>Math.abs(t-PG.target));
+  // quem errou por menos faz o gol; empate exato (mesmo valor no visor) dá gol pros dois
+  const dc = d.map(x => Math.round(x/10)); // em centésimos, igual ao visor
+  const tie = dc[0] === dc[1];
+  const hit = tie ? [true,true] : [dc[0]<dc[1], dc[1]<dc[0]];
+  PG.goals[0].push(hit[0]); PG.goals[1].push(hit[1]);
+  const g = PG.goals.map(x=>x.filter(Boolean).length);
+  const done = PG.goals[0].length, left = Math.max(0, KICKS-done);
+  let over = false;
+  if(done < KICKS){ if(g[0] > g[1]+left || g[1] > g[0]+left) over = true; }
+  else if(g[0]!==g[1]) over = true;
+  const n = hit.filter(Boolean).length;
+  try{ beep(n===2?1700:n===1?1400:500, .25); }catch(e){}
+  const title = n===2 ? 'DOIS GOLS!' : 'GOOOL!';
+  const txt = n===2 ? 'Empate exato: os dois erraram pelo mesmo tanto. Gol pra cada lado.'
+    : `<strong style="color:var(--fg)">${esc(PG.names[hit[0]?0:1])}</strong> chegou mais perto e fez o gol. ${esc(PG.names[hit[0]?1:0])} perdeu.`;
+  tag(penLabel());
+  render(`<section>
+    <div class="goal" ${n===0?'style="color:var(--imp)"':''}>${title}</div>
+    <p class="center">${txt}</p>
+    <div class="duel">${[0,1].map(i=>`<div class="${hit[i]?'win':''}"><b>${esc(PG.names[i])}</b><span class="t">${fmt(PG.times[i])}</span><small>${hit[i]?'⚽ gol':'✕ pegou'} · errou ${(d[i]/1000).toFixed(2)}s</small></div>`).join('')}</div>
+    <p class="center hint">Alvo era ${ledTime(PG.target)}s.</p>
+    ${penBoard(false)}
+    <button class="btn" id="next">${over?'Ver o campeão':done===KICKS-1&&!over?'Última cobrança':done>=KICKS?'Alternadas: próxima cobrança':'Próxima cobrança'}</button>
+  </section>`, 'p-result');
+  $('#next').onclick = () => over ? penEnd() : penRound();
+}
+function penEnd(){
+  const g = PG.goals.map(x=>x.filter(Boolean).length);
+  const w = g[0]>g[1]?0:1;
+  tag('Pênaltis · fim');
+  try{ beep(1200,.12); setTimeout(()=>beep(1600,.12),160); setTimeout(()=>beep(2000,.3),320); }catch(e){}
+  render(`<section>
+    <div class="panel"><div class="plabel">placar final</div>${led(String(g[0]).slice(-1)+' '+String(g[1]).slice(-1))}<div class="plabel">${esc(PG.names[0])} × ${esc(PG.names[1])}</div></div>
+    <div class="verdict" style="color:var(--led)">${esc(PG.names[w])} é campeão!</div>
+    <p class="center">Venceu por ${g[w]} a ${g[1-w]}${PG.goals[0].length>KICKS?' nas alternadas':''}.</p>
+    ${penBoard(false)}
+    <button class="btn" id="again">Revanche</button>
+    <button class="ghost" id="edit">Mudar jogadores</button>
+  </section>`, 'p-end');
+  $('#again').onclick = () => { PG = { names:PG.names, goals:[[],[]], round:0 }; penRound(); };
+  $('#edit').onclick = penSetup;
+}
+
+/* =====================================================================
+   ADIVINHE O JOGADOR
+   ===================================================================== */
+const PLAYERS = [
+  { n:'Cristiano Ronaldo', c:['É português.','É atacante e famoso pelas cobranças de falta e pelos gols de cabeça.','Jogou no Manchester United e no Real Madrid.','Ganhou 5 Bolas de Ouro.','É o maior artilheiro da história das seleções.','Comemora gritando "Siuuu!".'] },
+  { n:'Messi', c:['É sul-americano e canhoto.','Jogou quase a carreira inteira num só clube da Espanha.','Também jogou no PSG e no Inter Miami.','Ganhou 8 Bolas de Ouro, mais que qualquer um.','Foi campeão da Copa do Mundo de 2022.','É argentino e usa a camisa 10.'] },
+  { n:'Neymar', c:['É brasileiro e famoso pelos dribles.','Foi revelado num clube do litoral de São Paulo.','Jogou no Barcelona e no PSG.','É o maior artilheiro da história da seleção brasileira.','Fez a transferência mais cara da história do futebol.','Voltou pro Santos em 2025.'] },
+  { n:'Mbappé', c:['É europeu e muito rápido.','Começou a carreira no Monaco.','Jogou vários anos no PSG.','Foi campeão da Copa de 2018 com apenas 19 anos.','Fez 3 gols numa final de Copa do Mundo, em 2022.','É francês e foi pro Real Madrid em 2024.'] },
+  { n:'Vinícius Júnior', c:['É brasileiro e joga pela ponta esquerda.','Foi revelado no Flamengo.','Foi vendido pra Europa ainda adolescente.','Fez o gol do título da Champions League de 2022.','Foi eleito o melhor do mundo pela FIFA em 2024.','Joga no Real Madrid e usa a camisa 7.'] },
+  { n:'Haaland', c:['É europeu e um centroavante gigante.','Joga na Premier League.','Antes, jogou no Borussia Dortmund.','Bateu o recorde de gols numa temporada da Premier League.','O pai dele também foi jogador do Manchester City.','É norueguês.'] },
+  { n:'Pelé', c:['É brasileiro e já se aposentou há muito tempo.','Usava a camisa 10.','Jogou a maior parte da carreira no Santos.','Fez mais de mil gols.','É o único jogador com 3 Copas do Mundo.','É chamado de "Rei do Futebol".'] },
+  { n:'Ronaldinho', c:['É brasileiro e famoso pelo sorriso.','Começou no Grêmio.','Foi campeão da Copa de 2002.','Brilhou no Barcelona e ganhou a Bola de Ouro em 2005.','Ganhou a Libertadores pelo Atlético Mineiro em 2013.','Era o rei das jogadas de efeito e do "elástico".'] },
+  { n:'Ronaldo Fenômeno', c:['É brasileiro e era centroavante.','Jogou no Barcelona, na Inter de Milão e no Real Madrid.','Teve lesões graves no joelho e voltou a jogar.','Foi artilheiro da Copa de 2002, com 8 gols.','Ficou famoso por um corte de cabelo com um "triângulo" na frente.','Também jogou no Corinthians.'] },
+  { n:'Kaká', c:['É brasileiro e era meia.','Foi revelado no São Paulo.','Foi campeão da Copa de 2002.','Brilhou no Milan.','Ganhou a Bola de Ouro em 2007.','Também jogou no Real Madrid.'] },
+  { n:'Lamine Yamal', c:['É muito jovem: nasceu em 2007.','É espanhol, mas tem origem marroquina.','Foi revelado na base do Barcelona.','É canhoto e joga pela ponta direita.','Foi campeão da Eurocopa de 2024 com 17 anos.','Joga no Barcelona.'] },
+  { n:'Modrić', c:['É europeu e é meio-campista.','Jogou no Tottenham, na Inglaterra.','Passou mais de dez anos no Real Madrid.','Ganhou a Bola de Ouro em 2018.','Levou o país dele à final da Copa de 2018.','É croata.'] },
+  { n:'Salah', c:['É africano e canhoto.','Jogou na Roma, na Itália.','É ídolo de um clube inglês de vermelho.','Foi artilheiro da Premier League várias vezes.','Ganhou a Champions League em 2019.','É egípcio e ídolo do Liverpool.'] },
+  { n:'Zidane', c:['É europeu e era meio-campista.','Jogou na Juventus e no Real Madrid.','Fez 2 gols de cabeça numa final de Copa contra o Brasil, em 1998.','Foi expulso na final da Copa de 2006 por dar uma cabeçada num zagueiro.','Como técnico, ganhou 3 Champions seguidas.','É francês.'] },
+  { n:'Romário', c:['É brasileiro e era baixinho.','Era atacante e fazia muitos gols dentro da área.','Jogou no Vasco, no Flamengo e no Barcelona.','Foi o melhor jogador da Copa de 1994.','Diz que fez mais de mil gols.','Depois de parar, virou político.'] },
+  { n:'Casemiro', c:['É brasileiro e é volante.','Foi revelado no São Paulo.','Ganhou 5 Champions League pelo Real Madrid.','Foi jogar na Inglaterra em 2022.','É famoso por roubar bolas e pelos carrinhos.','Saiu do Real Madrid pro Manchester United.'] },
+  { n:'Benzema', c:['É europeu e era centroavante.','Começou no Lyon.','Jogou mais de dez anos no Real Madrid, ao lado de Cristiano Ronaldo.','Ganhou a Bola de Ouro em 2022.','Foi jogar na Arábia Saudita em 2023.','É francês.'] },
+  { n:'Harry Kane', c:['É europeu e é centroavante.','Virou o maior artilheiro da história do Tottenham.','É o maior artilheiro da história da seleção dele.','Foi pra Alemanha em 2023.','Joga no Bayern de Munique.','É inglês.'] },
+  { n:'Endrick', c:['É brasileiro e muito jovem: nasceu em 2006.','Foi revelado no Palmeiras.','Foi vendido pro Real Madrid antes de completar 18 anos.','Fez gol pela seleção brasileira no estádio de Wembley.','É atacante e baixinho.','Foi campeão brasileiro pelo Palmeiras em 2022 e 2023.'] },
+  { n:'Gabigol', c:['É brasileiro e atacante.','Foi revelado no Santos.','Teve passagens pela Inter de Milão e pelo Benfica, sem muito sucesso.','Virou ídolo do Flamengo.','Fez os 2 gols da virada na final da Libertadores de 2019.','O apelido dele junta o nome com a palavra "gol".'] },
+];
+const GQ = Object.assign({ rounds:5, scores:{}, duel:false, minT:3, maxT:10 }, store.get('ci-guess', {}) || {});
+GQ.scores = GQ.scores || {};
+const gPersist = () => store.set('ci-guess', GQ);
+let GG = null;
+const MAXPTS = 6;
+const ALIAS = { 'Cristiano Ronaldo':['cr7','cristiano','ronaldo'], 'Messi':['lionel messi','leo messi'], 'Neymar':['neymar jr','ney'], 'Mbappé':['mbappe','kylian'], 'Vinícius Júnior':['vini','vini jr','vinicius','vinicius junior'], 'Haaland':['erling'], 'Ronaldinho':['ronaldinho gaucho','r10'], 'Ronaldo Fenômeno':['ronaldo','fenomeno','r9'], 'Lamine Yamal':['yamal','lamine'], 'Modrić':['modric','luka'], 'Salah':['mo salah','mohamed salah'], 'Zidane':['zizou'], 'Romário':['romario','baixinho'], 'Benzema':['karim'], 'Harry Kane':['kane'], 'Gabigol':['gabriel barbosa','gabriel'], 'Pelé':['pele','edson'] };
+const norm = s => String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+function guessMatches(typed, P1){
+  const t = norm(typed); if(t.length<2) return false;
+  const n = norm(P1.n);
+  if(t===n || t===n.replace(/ /g,'')) return true;
+  if((ALIAS[P1.n]||[]).some(a=>norm(a)===t)) return true;
+  // uma palavra inteira do nome com 4+ letras ("cristiano", "junior")
+  return n.split(' ').some(w => w.length>=4 && w===t);
+}
+const newGame = () => ({ deck: shuffle([...PLAYERS]).slice(0, GQ.rounds), i:0, shown:1, pts:Object.fromEntries(S.players.map(p=>[p,0])), known:{} });
+
+function guessSetup(){
+  tag('Adivinhe');
+  render(`<section>
+    <h1>Adivinhe o jogador</h1>
+    <p>${GQ.duel
+      ? 'Antes de cada dica, todo mundo disputa no cronômetro. Quem chegar mais perto do tempo ganha a dica, vê ela em segredo e tenta um chute. Acertou na 1ª dica vale 6 pontos, na última vale 1.'
+      : 'O site mostra uma dica por vez. Quem acertar primeiro, em voz alta, ganha os pontos. Quanto menos dicas precisar, mais pontos: 6 na primeira dica, 1 na última.'}</p>
+    <div class="box">
+      <h2>Jogadores (${S.players.length})</h2>
+      <ul class="players">${S.players.map((p,i)=>`<li><span class="n">${String(i+1).padStart(2,'0')}</span><span class="name">${esc(p)}</span><button class="x" aria-label="Remover ${esc(p)}" data-rm="${i}">×</button></li>`).join('')}</ul>
+      <form class="add" id="addForm"><input type="text" id="newName" placeholder="Nome do jogador" maxlength="18" autocomplete="off"><button class="ghost" type="submit">Adicionar</button></form>
+    </div>
+    <div class="box">
+      <div class="row"><span>Jogadores pra adivinhar</span><div class="step"><button data-st="-1" aria-label="Menos">−</button><output>${GQ.rounds}</output><button data-st="1" aria-label="Mais">+</button></div></div>
+      <div class="row"><span>Disputa pela dica</span><div class="seg" role="group" aria-label="Disputa pela dica" style="min-width:150px"><button type="button" data-duel="0" aria-pressed="${!GQ.duel}">Não</button><button type="button" data-duel="1" aria-pressed="${GQ.duel}">Sim</button></div></div>
+      <p class="hint">${GQ.duel ? 'Com o cronômetro: o melhor tempo ganha a dica só pra ele.' : 'Sem cronômetro: a dica aparece pra todo mundo e quem gritar primeiro leva.'}</p>
+      ${GQ.duel ? `<div class="row"><span>Tempo sorteado entre</span><div class="step"><button data-gr="-1" aria-label="Diminuir">−</button><output>${GQ.minT}–${GQ.maxT}s</output><button data-gr="1" aria-label="Aumentar">+</button></div></div>` : ''}
+    </div>
+    <button class="btn" id="start" ${S.players.length<(GQ.duel?2:1)?'disabled':''}>${GQ.duel&&S.players.length<2?'Precisa de 2 jogadores':'Começar'}</button>
+  </section>`, 'g-setup');
+  $$('[data-duel]').forEach(b=>b.onclick=()=>{ GQ.duel = b.dataset.duel==='1'; gPersist(); guessSetup(); });
+  $$('[data-gr]').forEach(b=>b.onclick=()=>{ GQ.maxT=Math.max(GQ.minT+3,Math.min(60,GQ.maxT+(+b.dataset.gr)*5)); gPersist(); guessSetup(); });
+  $('#addForm').onsubmit = e => { e.preventDefault(); const v=$('#newName').value.trim(); if(v && !S.players.includes(v)){S.players.push(v);persist();guessSetup();$('#newName').focus();} };
+  $$('[data-rm]').forEach(b=>b.onclick=()=>{S.players.splice(+b.dataset.rm,1);persist();guessSetup();});
+  $$('[data-st]').forEach(b=>b.onclick=()=>{ GQ.rounds=Math.max(1,Math.min(PLAYERS.length,GQ.rounds+(+b.dataset.st))); gPersist(); guessSetup(); });
+  $('#start').onclick = () => { GG = newGame(); GQ.duel ? duelStart() : guessRound(); };
+}
+
+/* ---- disputa pela dica (cronômetro) ---- */
+function duelStart(){
+  GG.target = randTarget(GQ.minT, GQ.maxT);
+  GG.order = shuffle([...S.players]); GG.k = 0; GG.times = {};
+  duelPass();
+}
+function duelPass(){
+  const p = GG.order[GG.k];
+  tag(`Adivinhe · dica ${GG.shown}/${MAXPTS}`);
+  render(`<section>
+    <h2 class="center">Jogador ${GG.i+1} de ${GG.deck.length} · disputa pela dica ${GG.shown}</h2>
+    <div class="panel">${led(ledTime(GG.target))}<div class="plabel">tempo-alvo · quem chegar mais perto ganha a dica</div></div>
+    <div class="who">${esc(p)}</div>
+    <p class="center">${GG.k>0?`${GG.k} de ${GG.order.length} já cobraram.`:'Todo mundo tenta o mesmo tempo.'}</p>
+    <button class="btn" id="go">Sou ${esc(p)}, vou cronometrar</button>
+  </section>`, 'd-pass');
+  $('#go').onclick = () => {
+    const sw = stopwatch({ pre: led(ledTime(GG.target)), label:`alvo · vez de ${esc(p)}`, onStop: ms => {
+      GG.times[p] = ms; GG.k++;
+      setTimeout(()=> GG.k < GG.order.length ? duelPass() : duelWinner(), 600);
+    }});
+    render(`<section>${sw.html}</section>`, 'd-kick'); sw.bind();
+  };
+}
+function duelWinner(){
+  const rows = GG.order.map(p=>({ name:p, ms:GG.times[p], d:Math.abs(GG.times[p]-GG.target) })).sort((a,b)=>a.d-b.d);
+  GG.winner = rows[0].name;
+  try{ beep(1700,.2); }catch(e){}
+  render(`<section>
+    <div class="goal" style="font-size:2.2rem">${esc(GG.winner)} ganhou a dica!</div>
+    <p class="center">Errou por só ${(rows[0].d/1000).toFixed(2)}s. Alvo era ${ledTime(GG.target)}s.</p>
+    <div class="box">${bars(rows.map(r=>({name:r.name, ms:r.ms, cls:r.name===GG.winner?'crew':''})), GG.target)}</div>
+    <p class="center">Passe o celular pra <strong style="color:var(--fg)">${esc(GG.winner)}</strong>. Só ele vê a dica.</p>
+    <button class="btn" id="see">Sou ${esc(GG.winner)}, ver minha dica</button>
+  </section>`, 'd-winner');
+  $('#see').onclick = duelClue;
+}
+function duelClue(){
+  const P1 = GG.deck[GG.i], w = GG.winner, idx = GG.shown-1, pts = MAXPTS - idx;
+  GG.known[w] = GG.known[w] || []; if(!GG.known[w].includes(idx)) GG.known[w].push(idx);
+  const mine = GG.known[w].slice().sort((a,b)=>a-b);
+  render(`<section>
+    <h1 class="center">Quem é?</h1>
+    <p class="center hint">Dicas que só você sabe, ${esc(w)}:</p>
+    <ol class="clues">${mine.map(k=>`<li class="${k===idx?'new':''}"><span class="cn">${k+1}</span><span>${esc(P1.c[k])}</span></li>`).join('')}</ol>
+    <p class="pts">Acertar agora vale ${pts} ${pts>1?'pontos':'ponto'}</p>
+    <form class="inline" id="gForm"><input type="text" id="gName" maxlength="30" placeholder="Nome do jogador" autocomplete="off" autocapitalize="words"><button class="btn" type="submit" style="width:auto;padding-inline:18px">Chutar</button></form>
+    <p class="err" id="gErr"></p>
+    <button class="ghost" id="pass">Não sei, passar a vez</button>
+  </section>`, 'd-clue');
+  $('#gName').focus();
+  const wrong = msg => {
+    $('#gErr').textContent = msg;
+    try{ beep(500,.2); }catch(e){}
+    setTimeout(duelNext, 1200);
+  };
+  $('#gForm').onsubmit = e => {
+    e.preventDefault();
+    const v = $('#gName').value.trim(); if(!v) return;
+    $('#gForm button').disabled = true;
+    if(guessMatches(v, P1)) guessReveal(w, pts);
+    else wrong(`"${v}" não é. A dica fica só com você.`);
+  };
+  $('#pass').onclick = () => { $('#pass').disabled = true; wrong('Passou. A dica fica só com você.'); };
+}
+function duelNext(){
+  if(GG.shown >= MAXPTS) return guessReveal(null, 0);
+  GG.shown++; duelStart();
+}
+function guessRound(){
+  const P1 = GG.deck[GG.i];
+  tag(`Adivinhe · ${GG.i+1}/${GG.deck.length}`);
+  const pts = MAXPTS - GG.shown + 1;
+  render(`<section>
+    <h2 class="center">Jogador ${GG.i+1} de ${GG.deck.length}</h2>
+    <h1 class="center">Quem é?</h1>
+    <ol class="clues">${P1.c.slice(0,GG.shown).map((c,k)=>`<li class="${k===GG.shown-1?'new':''}"><span class="cn">${k+1}</span><span>${esc(c)}</span></li>`).join('')}</ol>
+    <p class="pts">Vale ${pts} ${pts>1?'pontos':'ponto'} agora</p>
+    <div class="box"><h2>Quem acertou?</h2>
+      <div class="vote">${S.players.map(p=>`<button data-hit="${esc(p)}">${esc(p)}</button>`).join('')}</div></div>
+    ${GG.shown<P1.c.length ? `<button class="btn" id="more">Mais uma dica</button>` : `<button class="btn red" id="none">Ninguém acertou, mostrar resposta</button>`}
+  </section>`, 'g-round');
+  $$('[data-hit]').forEach(b=>b.onclick=()=>guessReveal(b.dataset.hit, pts));
+  const m=$('#more'); if(m) m.onclick=()=>{ GG.shown++; guessRound(); };
+  const n=$('#none'); if(n) n.onclick=()=>guessReveal(null,0);
+}
+function guessReveal(who, pts){
+  const P1 = GG.deck[GG.i];
+  if(who){ GG.pts[who]=(GG.pts[who]||0)+pts; GQ.scores[who]=(GQ.scores[who]||0)+pts; gPersist(); }
+  const last = GG.i===GG.deck.length-1;
+  render(`<section>
+    <div class="panel" style="padding-block:24px"><div class="plabel">era</div><div class="secret" style="color:#c79bff;text-shadow:none">${esc(P1.n)}</div></div>
+    <p class="center">${who?`<strong style="color:var(--fg)">${esc(who)}</strong> acertou ${GQ.duel?'na':'com'} ${GG.shown}ª dica e ganhou ${pts} ${pts>1?'pontos':'ponto'}.`:'Ninguém acertou essa.'}</p>
+    ${GQ.duel ? `<div class="box"><h2>Todas as dicas</h2><ol class="clues">${P1.c.map((c,k)=>`<li><span class="cn">${k+1}</span><span>${esc(c)}</span></li>`).join('')}</ol></div>` : ''}
+    <div class="box"><h2>Placar desta partida</h2><ul class="score">${Object.keys(GG.pts).sort((a,b)=>GG.pts[b]-GG.pts[a]).map(p=>`<li><span>${esc(p)}</span><span>${GG.pts[p]}</span></li>`).join('')}</ul></div>
+    <button class="btn" id="next">${last?'Ver o vencedor':'Próximo jogador'}</button>
+  </section>`, 'g-reveal');
+  try{ if(who) beep(1600,.2); }catch(e){}
+  $('#next').onclick = () => { if(last) return guessEnd(); GG.i++; GG.shown=1; GG.known={}; GQ.duel ? duelStart() : guessRound(); };
+}
+function guessEnd(){
+  tag('Adivinhe · fim');
+  const ranked = Object.keys(GG.pts).sort((a,b)=>GG.pts[b]-GG.pts[a]);
+  const top = ranked[0], tie = ranked.length>1 && GG.pts[ranked[1]]===GG.pts[top];
+  render(`<section>
+    <div class="verdict" style="color:#c79bff">${GG.pts[top]===0?'Ninguém pontuou!':tie?'Deu empate!':`${esc(top)} venceu!`}</div>
+    <div class="box"><h2>Placar final</h2><ul class="score">${ranked.map(p=>`<li><span>${esc(p)}</span><span>${GG.pts[p]}</span></li>`).join('')}</ul></div>
+    <button class="btn" id="again">Jogar de novo</button>
+    <button class="ghost" id="edit">Mudar jogadores</button>
+  </section>`, 'g-end');
+  $('#again').onclick = () => { GG = newGame(); GQ.duel ? duelStart() : guessRound(); };
+  $('#edit').onclick = guessSetup;
+}
+
+/* =====================================================================
+   DUVIDO! (cronômetro que vai somando, todo mundo no escuro)
+   ===================================================================== */
+const DV = Object.assign({ target:3, rounds:5, scores:{} }, store.get('ci-dv', {}) || {});
+DV.scores = DV.scores || {};
+const dvPersist = () => store.set('ci-dv', DV);
+let DG = null;
+const dvTotal = () => DG.chain.reduce((s,c)=>s+c.ms,0);
+
+function dvChain(reveal){
+  const T = DV.target*1000; let acc = 0;
+  return `<div class="chain">${DG.chain.map((c,i)=>{
+    acc += c.ms; const over = acc > T;
+    return `${i?'<span class="arrow">+</span>':''}<div class="lk ${reveal?(over?'bad':'ok'):'hid'} ${!reveal&&i===DG.chain.length-1?'last':''}"><b>${esc(c.p)}</b><span>${reveal?fmt(c.ms):'?.??'}</span>${reveal?`<small style="font-family:var(--mono);color:var(--muted)">soma ${fmt(acc)}</small>`:''}</div>`;
+  }).join('')}${DG.chain.length?'':'<span class="hint">ninguém foi ainda</span>'}</div>`;
+}
+function dvSetup(){
+  tag('Duvido!');
+  render(`<section>
+    <h1>Duvido!</h1>
+    <p>Um cronômetro só, que vai <strong style="color:var(--fg)">somando</strong>. Cada um, na sua vez, deixa ele correr um pouco e para, contando de cabeça. A soma de todo mundo não pode passar de <strong style="color:var(--fg)">${DV.target} segundos</strong>, e ninguém vê tempo nenhum. Quem achar que a soma já estourou grita "Duvido!". Estourou? O último perde. Não estourou? Quem duvidou perde.</p>
+    <div class="box">
+      <h2>Jogadores (${S.players.length})</h2>
+      <ul class="players">${S.players.map((p,i)=>`<li><span class="n">${String(i+1).padStart(2,'0')}</span><span class="name">${esc(p)}</span><button class="x" aria-label="Remover ${esc(p)}" data-rm="${i}">×</button></li>`).join('')}</ul>
+      <form class="add" id="addForm"><input type="text" id="newName" placeholder="Nome do jogador" maxlength="18" autocomplete="off"><button class="ghost" type="submit">Adicionar</button></form>
+    </div>
+    <div class="box">
+      <div class="row"><span>A soma não pode passar de</span><div class="step"><button data-dt="-1" aria-label="Menos">−</button><output>${DV.target}s</output><button data-dt="1" aria-label="Mais">+</button></div></div>
+      <div class="row"><span>Rodadas</span><div class="step"><button data-dr="-1" aria-label="Menos">−</button><output>${DV.rounds}</output><button data-dr="1" aria-label="Mais">+</button></div></div>
+      <p class="hint">Quem vence a dúvida ganha 1 ponto. A rodada só acaba quando alguém duvida.</p>
+    </div>
+    <button class="btn" id="start" ${S.players.length<2?'disabled':''}>${S.players.length<2?'Precisa de 2 jogadores':'Começar'}</button>
+    ${Object.keys(DV.scores).length?`<button class="ghost" id="reset">Zerar placar</button>`:''}
+  </section>`, 'dv-setup');
+  $('#addForm').onsubmit = e => { e.preventDefault(); const v=$('#newName').value.trim(); if(v && !S.players.includes(v)){S.players.push(v);persist();dvSetup();$('#newName').focus();} };
+  $$('[data-rm]').forEach(b=>b.onclick=()=>{S.players.splice(+b.dataset.rm,1);persist();dvSetup();});
+  $$('[data-dt]').forEach(b=>b.onclick=()=>{ DV.target=Math.max(2,Math.min(30,DV.target+(+b.dataset.dt))); dvPersist(); dvSetup(); });
+  $$('[data-dr]').forEach(b=>b.onclick=()=>{ DV.rounds=Math.max(1,Math.min(15,DV.rounds+(+b.dataset.dr))); dvPersist(); dvSetup(); });
+  $('#start').onclick = () => { DG = { round:0, pts:Object.fromEntries(S.players.map(p=>[p,0])) }; dvRound(); };
+  const r=$('#reset'); if(r) r.onclick=()=>{DV.scores={};dvPersist();dvSetup();};
+}
+function dvRound(){
+  DG.round++;
+  const start = (DG.round-1) % S.players.length;
+  DG.order = [...S.players.slice(start), ...S.players.slice(0,start)];
+  DG.idx = 0; DG.chain = [];
+  dvPass();
+}
+function dvPass(){
+  tag(`Duvido! · rodada ${DG.round}/${DV.rounds}`);
+  const p = DG.order[DG.idx % DG.order.length], last = DG.chain[DG.chain.length-1];
+  render(`<section>
+    <div class="panel">${led(ledTime(DV.target*1000))}<div class="plabel">a soma de todos não pode passar disso</div></div>
+    <div class="box"><h2>Quem já somou (${DG.chain.length})</h2>${dvChain(false)}</div>
+    ${last ? `<p class="center">Alguém acha que depois de <strong style="color:var(--fg)">${esc(last.p)}</strong> a soma já passou de ${DV.target}s?</p>
+              <button class="doubt" id="doubt">DUVIDO de ${esc(last.p)}!</button>
+              <p class="center hint">Ninguém duvidou? Então continua somando:</p>` : `<p class="center hint">Começa a rodada. Cronômetro zerado.</p>`}
+    <div class="who">${esc(p)}</div>
+    <button class="btn" id="go">Sou ${esc(p)}, vou somar meu tempo</button>
+  </section>`, 'dv-pass');
+  $('#go').onclick = () => dvKick(p);
+  const d=$('#doubt'); if(d) d.onclick = dvWho;
+}
+function dvKick(p){
+  const sw = stopwatch({ pre: led('--.--'), label:`soma até agora escondida · vez de ${esc(p)}`, onStop: ms => {
+    DG.chain.push({ p, ms });
+    $('#panel').innerHTML = led('--.--') + `<div class="plabel">somado · ninguém vê, nem você</div>`;
+    setTimeout(()=>{ DG.idx++; DG.idx >= DG.order.length*4 ? dvForced() : dvPass(); }, 900);
+  }});
+  render(`<section>${sw.html}</section>`, 'dv-kick');
+  sw.bind();
+}
+function dvWho(){
+  const last = DG.chain[DG.chain.length-1];
+  render(`<section>
+    <h1 class="center">Quem duvidou?</h1>
+    <p class="center">Quem gritou "Duvido!" de ${esc(last.p)} primeiro?</p>
+    <div class="vote">${S.players.filter(x=>x!==last.p).map(x=>`<button data-w="${esc(x)}">${esc(x)}</button>`).join('')}</div>
+    <button class="ghost" id="back">Ninguém, voltar</button>
+  </section>`, 'dv-who');
+  $$('[data-w]').forEach(b=>b.onclick=()=>dvShowdown(b.dataset.w));
+  $('#back').onclick = dvPass;
+}
+function dvShowdown(doubter){
+  const T = DV.target*1000, total = dvTotal();
+  const last = DG.chain[DG.chain.length-1];
+  const bust = total > T;
+  const winner = bust ? doubter : last.p;
+  DG.pts[winner]++; DV.scores[winner]=(DV.scores[winner]||0)+1; dvPersist();
+  try{ beep(bust?500:1700,.3); }catch(e){}
+  render(`<section>
+    <div class="verdict" style="color:var(${bust?'--imp':'--led'})">${bust?`Estourou! ${esc(last.p)} foi pego.`:`${esc(doubter)} duvidou à toa!`}</div>
+    <div class="panel">${led(ledTime(total), bust?'red':'')}<div class="plabel">soma de todos · limite ${DV.target}s</div></div>
+    <p class="center">${bust?`A soma deu ${fmt(total)}, passou de ${DV.target}s. ${esc(last.p)} foi quem estourou e`:`A soma deu ${fmt(total)}, ainda cabia. ${esc(last.p)} estava certo e`} <strong style="color:var(--fg)">${esc(winner)}</strong> ganha 1 ponto.</p>
+    <div class="box"><h2>Quanto cada um somou</h2>${dvChain(true)}</div>
+    ${dvScore()}
+    <button class="btn" id="next">${DG.round<DV.rounds?'Próxima rodada':'Ver o campeão'}</button>
+  </section>`, 'dv-show');
+  $('#next').onclick = () => DG.round<DV.rounds ? dvRound() : dvEnd();
+}
+function dvForced(){
+  // ninguém duvidou em 4 voltas inteiras: revela e segue
+  const T = DV.target*1000, total = dvTotal(), bust = total > T, last = DG.chain[DG.chain.length-1];
+  if(!bust){ DG.pts[last.p]++; DV.scores[last.p]=(DV.scores[last.p]||0)+1; dvPersist(); }
+  render(`<section>
+    <div class="verdict" style="color:var(--warn)">Ninguém duvidou!</div>
+    <div class="panel">${led(ledTime(total), bust?'red':'')}<div class="plabel">soma de todos · limite ${DV.target}s</div></div>
+    <p class="center">${bust?`A soma já estava em ${fmt(total)} e ninguém percebeu. Sem ponto nessa rodada.`:`Depois de tanta volta a soma ainda está em ${fmt(total)}. <strong style="color:var(--fg)">${esc(last.p)}</strong> leva o ponto.`}</p>
+    <div class="box"><h2>Quanto cada um somou</h2>${dvChain(true)}</div>
+    ${dvScore()}
+    <button class="btn" id="next">${DG.round<DV.rounds?'Próxima rodada':'Ver o campeão'}</button>
+  </section>`, 'dv-forced');
+  $('#next').onclick = () => DG.round<DV.rounds ? dvRound() : dvEnd();
+}
+function dvScore(){
+  return `<div class="box"><h2>Placar</h2><ul class="score">${Object.keys(DG.pts).sort((a,b)=>DG.pts[b]-DG.pts[a]).map(p=>`<li><span>${esc(p)}</span><span>${DG.pts[p]}</span></li>`).join('')}</ul></div>`;
+}
+function dvEnd(){
+  tag('Duvido! · fim');
+  const ranked = Object.keys(DG.pts).sort((a,b)=>DG.pts[b]-DG.pts[a]);
+  const top = ranked[0], tie = ranked.length>1 && DG.pts[ranked[1]]===DG.pts[top];
+  try{ beep(1200,.12); setTimeout(()=>beep(1600,.12),160); setTimeout(()=>beep(2000,.3),320); }catch(e){}
+  render(`<section>
+    <div class="verdict" style="color:#ff8a3d">${DG.pts[top]===0?'Ninguém pontuou!':tie?'Deu empate!':`${esc(top)} é o rei do blefe!`}</div>
+    ${dvScore()}
+    <button class="btn" id="again">Jogar de novo</button>
+    <button class="ghost" id="edit">Mudar jogadores</button>
+  </section>`, 'dv-end');
+  $('#again').onclick = () => { DG = { round:0, pts:Object.fromEntries(S.players.map(p=>[p,0])) }; dvRound(); };
+  $('#edit').onclick = dvSetup;
+}
+
+/* =====================================================================
+   LEILÃO DE CRAQUES (2 a 3 pessoas, futsal 1-2-1)
+   ===================================================================== */
+const POOL = [
+  ['Alisson','GOL',89],['Ederson','GOL',88],['Courtois','GOL',89],['Neuer','GOL',87],['Buffon','GOL',90],['Taffarel','GOL',85],['Cássio','GOL',82],['Weverton','GOL',83],['Donnarumma','GOL',87],['Dida','GOL',84],
+  ['Thiago Silva','ZAG',87],['Marquinhos','ZAG',87],['Cafu','ZAG',90],['Roberto Carlos','ZAG',91],['Sergio Ramos','ZAG',89],['Van Dijk','ZAG',90],['Maldini','ZAG',94],['Baresi','ZAG',93],['Lúcio','ZAG',87],['Dani Alves','ZAG',88],['Marcelo','ZAG',88],['Puyol','ZAG',88],['Beckenbauer','ZAG',96],['Cannavaro','ZAG',90],['Militão','ZAG',86],['Bremer','ZAG',85],['Carlos Alberto Torres','ZAG',91],['Gabriel Magalhães','ZAG',85],
+  ['Ronaldinho','MEI',94],['Kaká','MEI',90],['Modrić','MEI',89],['Zidane','MEI',95],['Casemiro','MEI',86],['Bellingham','MEI',90],['De Bruyne','MEI',91],['Zico','MEI',93],['Rivaldo','MEI',91],['Maradona','MEI',97],['Iniesta','MEI',92],['Xavi','MEI',91],['Arrascaeta','MEI',85],['Rivelino','MEI',90],['Sócrates','MEI',91],['Pirlo','MEI',90],['Gerrard','MEI',89],['Rodri','MEI',89],['Paquetá','MEI',84],['Pedri','MEI',87],
+  ['Cristiano Ronaldo','ATA',93],['Messi','ATA',94],['Neymar','ATA',90],['Mbappé','ATA',92],['Vinícius Júnior','ATA',91],['Haaland','ATA',91],['Pelé','ATA',98],['Ronaldo Fenômeno','ATA',95],['Lamine Yamal','ATA',88],['Salah','ATA',90],['Romário','ATA',92],['Benzema','ATA',89],['Harry Kane','ATA',90],['Endrick','ATA',80],['Gabigol','ATA',82],['Rodrygo','ATA',86],['Raphinha','ATA',87],['Lewandowski','ATA',89],['Garrincha','ATA',95],['Ibrahimović','ATA',90],['Luis Suárez','ATA',89],['Hulk','ATA',84],['Estêvão','ATA',82],['Pedro','ATA',83],['Yuri Alberto','ATA',80],
+];
+const SLOTS = { GOL:1, ZAG:1, MEI:2, ATA:1 };
+const SLOT_LABEL = { GOL:'goleiro', ZAG:'zagueiro', MEI:'meia', ATA:'atacante' };
+const TEAM = 5;
+const LAU = Object.assign({ budget:50, who:[] }, store.get('ci-lau', {}) || {});
+const lauPersist = () => store.set('ci-lau', LAU);
+let LG = null;
+
+const countPos = (t,pos) => t.squad.filter(s=>s.pos===pos).length;
+const canTake = (t,pos) => countPos(t,pos) < SLOTS[pos];
+const allFull = () => Object.values(LG.teams).every(t=>t.squad.length>=TEAM);
+const initials = n => n.split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+const rating = t => t.squad.reduce((s,x)=>s+x.r,0) + (TEAM - t.squad.length)*50;
+
+/* campinho 1-2-1: GOL embaixo, ZAG, dois MEI, ATA em cima */
+function pitch(w, opts={}){
+  const t = LG.teams[w];
+  const spots = [ ['ATA',0,50,13], ['MEI',0,26,38], ['MEI',1,74,38], ['ZAG',0,50,62], ['GOL',0,50,87] ];
+  const byPos = {}; t.squad.forEach(s=>{ (byPos[s.pos]=byPos[s.pos]||[]).push(s); });
+  const slots = spots.map(([pos,k,x,y])=>{
+    const s = (byPos[pos]||[])[k];
+    const hot = opts.hot===pos && !s && canTake(t,pos);
+    return s
+      ? `<div class="spot" style="left:${x}%;top:${y}%"><span class="face ${s.filler?'fill':''}">${esc(initials(s.n))}</span><b>${esc(s.n)}</b><i>${s.r}${s.filler?'':' · R$'+s.paid}</i></div>`
+      : `<div class="spot empty ${hot?'hot':''}" style="left:${x}%;top:${y}%"><span class="face">${pos}</span><b>${hot?'vaga livre':''}</b></div>`;
+  }).join('');
+  return `<div class="pitchwrap ${opts.cls||''}">
+    <div class="pth"><b>${esc(w)}${opts.champ?' 🏆':''}</b><span class="money">${opts.final?'nota '+rating(t):'R$ '+t.money}</span></div>
+    <div class="pitch"><div class="box6 top"></div><div class="box6 bot"></div><div class="mid"></div><div class="circle"></div>${slots}</div>
+  </div>`;
+}
+function pitches(opts={}){
+  const champ = opts.final ? LAU.who.slice().sort((a,b)=>rating(LG.teams[b])-rating(LG.teams[a]) || LG.teams[b].money-LG.teams[a].money)[0] : null;
+  return `<div class="pitches n${LAU.who.length}">${LAU.who.map(w=>pitch(w,{...opts, champ:w===champ, cls:w===LG.leader&&!opts.final?'lead':''})).join('')}</div>`;
+}
+
+function lauSetup(){
+  tag('Leilão');
+  LAU.who = (LAU.who||[]).filter(w=>S.players.includes(w)).slice(0,3);
+  if(LAU.who.length<2) LAU.who = S.players.slice(0,3);
+  render(`<section>
+    <h1>Leilão de craques</h1>
+    <p>Cada um tem <strong style="color:var(--fg)">R$ ${LAU.budget}</strong> e um campinho de futsal com 5 vagas: goleiro, zagueiro, dois meias e um atacante. O site sorteia um craque por vez. Deem os lances e batam o martelo. Pegou um atacante? A vaga fecha, só sobram as outras. No fim, ganha o time com a maior nota.</p>
+    <div class="box">
+      <h2>Quem vai leiloar (2 a 3)</h2>
+      <div class="chips">${S.players.map(p=>`<button type="button" class="chip" data-who="${esc(p)}" aria-pressed="${LAU.who.includes(p)}">${esc(p)}</button>`).join('')}</div>
+      <form class="add" id="addForm"><input type="text" id="newName" placeholder="Nome do jogador" maxlength="18" autocomplete="off"><button class="ghost" type="submit">Adicionar</button></form>
+    </div>
+    <div class="box"><div class="row"><span>Dinheiro de cada um</span><div class="step"><button data-bg="-1" aria-label="Menos">−</button><output>R$ ${LAU.budget}</output><button data-bg="1" aria-label="Mais">+</button></div></div>
+      <p class="hint">O leilão só acaba quando todos os campinhos estiverem completos. Cada um precisa guardar R$ 1 por vaga que ainda falta.</p></div>
+    <button class="btn" id="start" ${LAU.who.length<2?'disabled':''}>${LAU.who.length<2?'Escolha pelo menos 2':'Abrir o leilão'}</button>
+  </section>`, 'lau-setup');
+  $('#addForm').onsubmit = e => { e.preventDefault(); const v=$('#newName').value.trim(); if(v && !S.players.includes(v)){S.players.push(v);persist(); if(LAU.who.length<3) LAU.who.push(v); lauPersist(); lauSetup();} };
+  $$('[data-who]').forEach(b=>b.onclick=()=>{ const p=b.dataset.who; if(LAU.who.includes(p)) LAU.who=LAU.who.filter(x=>x!==p); else if(LAU.who.length<3) LAU.who.push(p); lauPersist(); lauSetup(); });
+  $$('[data-bg]').forEach(b=>b.onclick=()=>{ LAU.budget=Math.max(20,Math.min(200,LAU.budget+(+b.dataset.bg)*10)); lauPersist(); lauSetup(); });
+  $('#start').onclick = lauStart;
+}
+function lauStart(){
+  const n = LAU.who.length;
+  const pick = (pos,q) => shuffle(POOL.filter(p=>p[1]===pos)).slice(0,q);
+  const pool = shuffle([...pick('GOL',n+1), ...pick('ZAG',n+1), ...pick('MEI',2*n+2), ...pick('ATA',n+2)]);
+  LG = { pool, i:0, teams:Object.fromEntries(LAU.who.map(w=>[w,{money:LAU.budget, squad:[]}])), lot:null, bid:0, leader:null, lotNum:0 };
+  lauNext();
+}
+const maxBid = t => t.money - (TEAM - t.squad.length - 1); // guarda R$1 por vaga que ainda vai abrir
+function lauRefill(){
+  // acabou a fila: sorteia mais craques só das posições que ainda faltam
+  const used = new Set(LG.pool.map(p=>p[0]));
+  const need = {}; Object.values(LG.teams).forEach(t=>Object.keys(SLOTS).forEach(pos=>{ need[pos]=(need[pos]||0)+(SLOTS[pos]-countPos(t,pos)); }));
+  const extra = shuffle(POOL.filter(p=>!used.has(p[0]) && need[p[1]]>0));
+  const add = []; Object.keys(need).forEach(pos=>{ add.push(...extra.filter(p=>p[1]===pos).slice(0, need[pos]+1)); });
+  LG.pool.push(...shuffle(add));
+  return add.length>0;
+}
+function lauNext(){
+  if(allFull()) return lauEnd();
+  for(;;){
+    while(LG.i < LG.pool.length){
+      const pos = LG.pool[LG.i][1];
+      if(Object.values(LG.teams).some(t=>canTake(t,pos) && maxBid(t)>=1)) break;
+      LG.i++;
+    }
+    if(LG.i < LG.pool.length) break;
+    if(!lauRefill()) return lauEnd(); // elenco inteiro esgotado (muito raro)
+  }
+  const [n,pos,r] = LG.pool[LG.i];
+  LG.lot = { n, pos, r }; LG.bid = 0; LG.leader = null; LG.lotNum++;
+  lauLot();
+}
+function lauLot(){
+  const L = LG.lot;
+  tag(`Leilão · craque ${LG.lotNum}`);
+  render(`<section>
+    <div class="panel lot">
+      <div class="lp">${SLOT_LABEL[L.pos]} · em leilão</div>
+      <div class="ln">${esc(L.n)}</div>
+      <div class="lr">${L.r}</div><div class="lp">nota</div>
+    </div>
+    <div class="bid">${LG.leader ? `<span>maior lance</span><b>R$ ${LG.bid}</b><span>de ${esc(LG.leader)}</span>` : `<span>sem lance ainda</span>`}</div>
+    <div class="bidders">${LAU.who.map(w=>{ const t=LG.teams[w]; const ok = canTake(t,L.pos); const isLead = LG.leader===w;
+      return `<div class="bidder ${isLead?'lead':''} ${ok?'':'out'}">
+        <span class="bn">${esc(w)}${isLead?' 🔨':''}</span>
+        <span class="bm"><b>R$ ${t.money}</b>${maxBid(t)<t.money?` · pode gastar até R$ ${Math.max(0,maxBid(t))}`:''}</span>
+        <div class="bb">${ok ? [1,2,5,10].map(inc=>{ const v = (LG.leader?LG.bid:0)+inc; return `<button data-bid="${esc(w)}:${v}" ${v>maxBid(t)||isLead?'disabled':''}>+${inc}</button>`; }).join('') : `<span class="hint">já tem ${SLOT_LABEL[L.pos]}${SLOTS[L.pos]>1?'s':''}, não pode</span>`}</div>
+      </div>`; }).join('')}</div>
+    <button class="hammer" id="hammer" ${LG.leader?'':'disabled'}>${LG.leader?`Bater o martelo: ${esc(LG.leader)} leva por R$ ${LG.bid}`:'Bater o martelo'}</button>
+    <button class="ghost" id="skip">Ninguém quer, próximo craque</button>
+    ${pitches({hot:L.pos})}
+    <p class="center hint">${LG.pool.length-LG.i-1} craques na fila. Acabou a fila? O site sorteia mais até todo mundo fechar o time.</p>
+  </section>`, 'lau-lot');
+  $$('[data-bid]').forEach(b=>b.onclick=()=>{ const [w,v]=b.dataset.bid.split(':'); LG.bid=+v; LG.leader=w; try{ beep(1300,.05); }catch(e){} lauLot(); });
+  $('#hammer').onclick = () => {
+    const t = LG.teams[LG.leader]; t.money -= LG.bid; t.squad.push({ n:L.n, pos:L.pos, r:L.r, paid:LG.bid });
+    try{ beep(900,.08); setTimeout(()=>beep(900,.08),120); setTimeout(()=>beep(1500,.25),240); }catch(e){}
+    LG.i++; lauSold();
+  };
+  $('#skip').onclick = () => { LG.i++; lauNext(); };
+}
+function lauSold(){
+  const t = LG.teams[LG.leader], s = t.squad[t.squad.length-1];
+  render(`<section>
+    <div class="goal" style="color:#5ee6c3;font-size:2.4rem">VENDIDO!</div>
+    <p class="center"><strong style="color:var(--fg)">${esc(s.n)}</strong> (nota ${s.r}) vai pro time de <strong style="color:var(--fg)">${esc(LG.leader)}</strong> por R$ ${s.paid}. Sobraram <strong style="color:#5ee6c3">R$ ${t.money}</strong>.</p>
+    ${pitches({})}
+    <button class="btn" id="next">${allFull()?'Ver o resultado':'Próximo craque'}</button>
+  </section>`, 'lau-sold');
+  $('#next').onclick = lauNext;
+}
+function lauEnd(){
+  tag('Leilão · resultado');
+  LAU.who.forEach(w=>{ const t=LG.teams[w]; Object.keys(SLOTS).forEach(pos=>{ while(countPos(t,pos)<SLOTS[pos]) t.squad.push({ n:(pos==='GOL'?'Goleiro':'Boleiro')+' da várzea', pos, r:50, paid:0, filler:true }); }); });
+  LG.leader = null;
+  const ranked = LAU.who.slice().sort((a,b)=>rating(LG.teams[b])-rating(LG.teams[a]) || LG.teams[b].money-LG.teams[a].money);
+  lauReveal(ranked);
+}
+function confetti(n=90){
+  const cols = ['#ff4d5e','#4fb3ff','#b07cff','#ffc53d','#3dff74','#5ee6c3','#fff'];
+  const b = document.createElement('div'); b.className='burst';
+  for(let i=0;i<n;i++){ const s=document.createElement('i'); s.style.left=Math.random()*100+'%'; s.style.background=cols[i%cols.length]; s.style.animationDuration=(1.8+Math.random()*1.6)+'s'; s.style.animationDelay=(Math.random()*.6)+'s'; s.style.width=(6+Math.random()*8)+'px'; s.style.height=(10+Math.random()*10)+'px'; b.append(s); }
+  document.body.append(b); setTimeout(()=>b.remove(), 4000);
+}
+function countUp(el, to, ms=900){
+  const t0 = performance.now();
+  const step = () => { const k = Math.min(1,(performance.now()-t0)/ms); const e = 1-Math.pow(1-k,3); el.textContent = Math.round(to*e); if(k<1) requestAnimationFrame(step); };
+  step();
+}
+function lauReveal(ranked){
+  const n = ranked.length;
+  render(`<section class="rv">
+    <div class="rv-title" id="rvTitle">Fechando as contas…</div>
+    <div id="rvList" style="display:flex;flex-direction:column;gap:10px"></div>
+    <div id="rvChamp"></div>
+    <button class="btn" id="rvNext" hidden>Ver os times no campinho</button>
+  </section>`, 'lau-reveal');
+  const list = $('#rvList'), title = $('#rvTitle');
+  let i = n - 1;
+  // rufar de tambores
+  let drum = 0; const drumT = setInterval(()=>{ try{ beep(drum%2?220:180,.05); }catch(e){} drum++; }, 160);
+  const showNext = () => {
+    if(i < 0){ clearInterval(drumT); return champion(); }
+    const w = ranked[i], t = LG.teams[w], pos = i+1;
+    title.textContent = pos===1 ? 'E o campeão é…' : pos===n ? 'Em último lugar…' : `Em ${pos}º lugar…`;
+    const card = document.createElement('div');
+    card.className = 'rv-card' + (pos===1?' gold':'');
+    card.innerHTML = `<span class="rk">${pos}º</span><span class="nm">${esc(w)}<br><small style="font-family:var(--mono);color:var(--muted);font-weight:400">sobrou R$ ${t.money}</small></span><span class="nt">0</span>`;
+    list.prepend(card);
+    countUp(card.querySelector('.nt'), rating(t));
+    try{ beep(pos===1?1800:900+pos*60,.18); }catch(e){}
+    i--;
+    setTimeout(showNext, pos===2 ? 2200 : 1500);
+  };
+  setTimeout(showNext, 1200);
+  function champion(){
+    const w = ranked[0];
+    title.textContent = '';
+    $('#rvChamp').innerHTML = `<div class="champ-wrap">
+      <svg class="trophy" viewBox="0 0 100 100" aria-hidden="true"><path d="M30 14h40v22c0 12-9 22-20 22S30 48 30 36z" fill="#ffc53d"/><path d="M30 20H16v8c0 9 7 16 16 16" fill="none" stroke="#ffc53d" stroke-width="6"/><path d="M70 20h14v8c0 9-7 16-16 16" fill="none" stroke="#ffc53d" stroke-width="6"/><rect x="44" y="58" width="12" height="12" fill="#e0a21f"/><rect x="32" y="70" width="36" height="8" rx="2" fill="#ffc53d"/><rect x="28" y="78" width="44" height="8" rx="2" fill="#e0a21f"/><path d="M44 22l4 8-7 2z" fill="#fff3c4" opacity=".8"/></svg>
+      <div class="champ-sub">campeão do leilão</div>
+      <div class="champ-name">${esc(w)}</div>
+      <div class="champ-sub">nota ${rating(LG.teams[w])}</div>
+    </div>`;
+    document.querySelector('.app').classList.add('shake'); setTimeout(()=>document.querySelector('.app').classList.remove('shake'),600);
+    confetti(); setTimeout(confetti, 700);
+    try{ beep(1200,.12); setTimeout(()=>beep(1600,.12),160); setTimeout(()=>beep(2000,.35),320); setTimeout(()=>beep(2400,.5),620); }catch(e){}
+    const b = $('#rvNext'); b.hidden = false; b.onclick = () => lauFinal(ranked);
+  }
+}
+function lauFinal(ranked){
+  render(`<section>
+    <div class="verdict" style="color:#5ee6c3">${esc(ranked[0])} montou o melhor time!</div>
+    <p class="center">Soma das notas dos 5. Empate? Quem guardou mais dinheiro ganha.</p>
+    ${pitches({final:true})}
+    <div class="box"><h2>Resumo</h2><ul class="score">${ranked.map(w=>`<li><span>${esc(w)}</span><span>nota ${rating(LG.teams[w])} · sobrou R$ ${LG.teams[w].money}</span></li>`).join('')}</ul></div>
+    <button class="btn" id="champ">⚽ Jogar o campeonato com esses times</button>
+    <button class="ghost" id="again">Novo leilão</button>
+    <button class="ghost" id="edit">Mudar jogadores</button>
+  </section>`, 'lau-end');
+  $('#champ').onclick = cupStart; $('#again').onclick = lauStart; $('#edit').onclick = lauSetup;
+}
+
+/* ---- celebração reutilizável ---- */
+function celebrate({ sub, name, detail, btn, onNext }){
+  render(`<section class="rv"><div id="rvChamp"><div class="champ-wrap">
+      <svg class="trophy" viewBox="0 0 100 100" aria-hidden="true"><path d="M30 14h40v22c0 12-9 22-20 22S30 48 30 36z" fill="#ffc53d"/><path d="M30 20H16v8c0 9 7 16 16 16" fill="none" stroke="#ffc53d" stroke-width="6"/><path d="M70 20h14v8c0 9-7 16-16 16" fill="none" stroke="#ffc53d" stroke-width="6"/><rect x="44" y="58" width="12" height="12" fill="#e0a21f"/><rect x="32" y="70" width="36" height="8" rx="2" fill="#ffc53d"/><rect x="28" y="78" width="44" height="8" rx="2" fill="#e0a21f"/><path d="M44 22l4 8-7 2z" fill="#fff3c4" opacity=".8"/></svg>
+      <div class="champ-sub">${sub}</div><div class="champ-name">${esc(name)}</div><div class="champ-sub">${detail}</div></div></div>
+    <button class="btn" id="rvNext">${btn}</button></section>`, 'celebrate');
+  document.querySelector('.app').classList.add('shake'); setTimeout(()=>document.querySelector('.app').classList.remove('shake'),600);
+  confetti(); setTimeout(confetti, 700);
+  try{ beep(1200,.12); setTimeout(()=>beep(1600,.12),160); setTimeout(()=>beep(2000,.35),320); setTimeout(()=>beep(2400,.5),620); }catch(e){}
+  $('#rvNext').onclick = onNext;
+}
+
+/* =====================================================================
+   CAMPEONATO (os times do leilão se enfrentam no cronômetro)
+   ===================================================================== */
+let CUP = null;
+const CUPCFG = Object.assign({ goals:5 }, store.get('ci-cup', {}) || {});
+CUPCFG.goals = Math.max(1, Math.min(20, +CUPCFG.goals || 5));
+const avg = a => a.reduce((s,x)=>s+x,0)/a.length;
+const atkOf = t => avg(t.squad.filter(s=>s.pos==='ATA'||s.pos==='MEI').map(s=>s.r));
+const defOf = t => avg(t.squad.filter(s=>s.pos==='GOL'||s.pos==='ZAG').map(s=>s.r));
+const windowMs = (a,b) => Math.max(200, Math.min(900, Math.round(450 * Math.pow(atkOf(LG.teams[a])/defOf(LG.teams[b]), 3))));
+function cupStart(){
+  const w = LAU.who, matches = [];
+  for(let i=0;i<w.length;i++) for(let j=i+1;j<w.length;j++) matches.push({ a:w[i], b:w[j], g:[0,0], k:0, log:[] });
+  CUP = { matches, m:0, table:Object.fromEntries(w.map(x=>[x,{p:0,gf:0,ga:0,w:0,d:0,l:0}])) };
+  cupIntro();
+}
+function cupIntro(){
+  const M = CUP.matches[CUP.m];
+  tag(`Campeonato · jogo ${CUP.m+1}/${CUP.matches.length}`);
+  render(`<section>
+    <h1 class="center">${esc(M.a)} × ${esc(M.b)}</h1>
+    <p class="center">Os ataques alternam. Em cada um, quem ataca tenta parar o cronômetro escondido no tempo-alvo. Errou pouco, é gol. A janela de gol depende do ataque de um contra a defesa do outro. <strong style="color:var(--fg)">Quem fizer ${CUPCFG.goals} gols primeiro vence.</strong></p>
+    <div class="box"><div class="row"><span>Gols pra vencer</span><div class="step"><button data-cg="-1" aria-label="Menos">−</button><output>${CUPCFG.goals}</output><button data-cg="1" aria-label="Mais">+</button></div></div></div>
+    <div class="box">
+      <div class="row"><span>Ataque de ${esc(M.a)} contra defesa de ${esc(M.b)}</span><span class="t" style="font-family:var(--mono);color:var(--led)">janela ±${(windowMs(M.a,M.b)/1000).toFixed(2)}s</span></div>
+      <div class="row"><span>Ataque de ${esc(M.b)} contra defesa de ${esc(M.a)}</span><span class="t" style="font-family:var(--mono);color:var(--led)">janela ±${(windowMs(M.b,M.a)/1000).toFixed(2)}s</span></div>
+    </div>
+    ${pitches({})}
+    <button class="btn" id="go">Apita o juiz!</button>
+  </section>`, 'cup-intro');
+  $$('[data-cg]').forEach(b=>b.onclick=()=>{ CUPCFG.goals=Math.max(1,Math.min(20,CUPCFG.goals+(+b.dataset.cg))); store.set('ci-cup',CUPCFG); cupIntro(); });
+  $('#go').onclick = cupAttack;
+}
+function cupAttack(){
+  const M = CUP.matches[CUP.m];
+  const atkIdx = M.k % 2, atk = atkIdx===0 ? M.a : M.b, def = atkIdx===0 ? M.b : M.a;
+  const n = Math.floor(M.k/2)+1, win = windowMs(atk, def), target = randTarget(3, 10);
+  const need = CUPCFG.goals;
+  tag(`${esc(M.a)} ${M.g[0]} × ${M.g[1]} ${esc(M.b)}`);
+  render(`<section>
+    <div class="scorebig"><b>${esc(M.a)}</b><span class="sc">${M.g[0]}–${M.g[1]}</span><b>${esc(M.b)}</b></div>
+    <h2 class="center">Ataque ${n} · ${esc(atk)} ataca · primeiro a ${need} gols</h2>
+    <div class="panel">${led(ledTime(target))}<div class="plabel">alvo · gol se errar até ${(win/1000).toFixed(2)}s</div></div>
+    <div class="who">${esc(atk)}</div>
+    <button class="btn" id="go">Sou ${esc(atk)}, vou chutar</button>
+  </section>`, 'cup-ready');
+  $('#go').onclick = () => {
+    const sw = stopwatch({ pre: led(ledTime(target)), label:`alvo · chute de ${esc(atk)}`, onStop: ms => {
+      const err = Math.abs(ms-target), goal = err <= win;
+      if(goal) M.g[atkIdx]++;
+      M.log.push({ atk, goal, err });
+      try{ beep(goal?1700:400, .3); }catch(e){}
+      setTimeout(()=>{
+        render(`<section>
+          <div class="goal" ${goal?'':'style="color:var(--imp)"'}>${goal?'GOOOL!':'DEFENDEU!'}</div>
+          <p class="center">${esc(atk)} parou em ${fmt(ms)}, errou ${(err/1000).toFixed(2)}s. ${goal?`Dentro da janela de ${(win/1000).toFixed(2)}s!`:`A janela era ${(win/1000).toFixed(2)}s. A zaga de ${esc(def)} segurou.`}</p>
+          <div class="scorebig"><b>${esc(M.a)}</b><span class="sc">${M.g[0]}–${M.g[1]}</span><b>${esc(M.b)}</b></div>
+          <button class="btn" id="next">${M.g[atkIdx] >= need ? 'Fim de jogo' : 'Próximo ataque'}</button>
+        </section>`, 'cup-res');
+        $('#next').onclick = () => { M.k++; M.g[0] >= need || M.g[1] >= need ? cupMatchEnd() : cupAttack(); };
+      }, 500);
+    }});
+    render(`<section>${sw.html}</section>`, 'cup-kick'); sw.bind();
+  };
+}
+function cupMatchEnd(){
+  const M = CUP.matches[CUP.m], T = CUP.table;
+  T[M.a].gf += M.g[0]; T[M.a].ga += M.g[1]; T[M.b].gf += M.g[1]; T[M.b].ga += M.g[0];
+  if(M.g[0]>M.g[1]){ T[M.a].p+=3; T[M.a].w++; T[M.b].l++; } else if(M.g[1]>M.g[0]){ T[M.b].p+=3; T[M.b].w++; T[M.a].l++; } else { T[M.a].p++; T[M.b].p++; T[M.a].d++; T[M.b].d++; }
+  const last = CUP.m === CUP.matches.length-1;
+  render(`<section>
+    <div class="verdict" style="color:var(--warn)">${M.g[0]===M.g[1]?'Empate!':`${esc(M.g[0]>M.g[1]?M.a:M.b)} venceu!`}</div>
+    <div class="scorebig"><b>${esc(M.a)}</b><span class="sc">${M.g[0]}–${M.g[1]}</span><b>${esc(M.b)}</b></div>
+    ${CUP.matches.length>1 ? cupTable() : ''}
+    <button class="btn" id="next">${last?'Ver o campeão':'Próximo jogo'}</button>
+  </section>`, 'cup-mend');
+  $('#next').onclick = () => { if(!last){ CUP.m++; return cupIntro(); } cupEnd(); };
+}
+function cupRank(){ return Object.keys(CUP.table).sort((a,b)=>{ const A=CUP.table[a],B=CUP.table[b]; return B.p-A.p || (B.gf-B.ga)-(A.gf-A.ga) || B.gf-A.gf || rating(LG.teams[b])-rating(LG.teams[a]); }); }
+function cupTable(){
+  return `<div class="box" style="overflow-x:auto"><h2>Classificação</h2><table class="table"><thead><tr><th>Time</th><th>P</th><th>V</th><th>E</th><th>D</th><th>GP</th><th>GC</th></tr></thead><tbody>${cupRank().map(w=>{ const t=CUP.table[w]; return `<tr><td>${esc(w)}</td><td>${t.p}</td><td>${t.w}</td><td>${t.d}</td><td>${t.l}</td><td>${t.gf}</td><td>${t.ga}</td></tr>`; }).join('')}</tbody></table></div>`;
+}
+function cupEnd(){
+  const r = cupRank(), w = r[0], t = CUP.table[w];
+  tag('Campeonato · campeão');
+  celebrate({ sub:'campeão do campeonato', name:w, detail: CUP.matches.length>1 ? `${t.p} pontos · ${t.gf} gols` : `${t.gf} × ${t.ga}`, btn:'Ver a classificação', onNext: () => {
+    render(`<section><div class="verdict" style="color:var(--warn)">${esc(w)} é o campeão!</div>${CUP.matches.length>1?cupTable():''}${pitches({final:true})}
+      <button class="btn" id="again">Jogar o campeonato de novo</button><button class="ghost" id="lau">Novo leilão</button></section>`, 'cup-end');
+    $('#again').onclick = cupStart; $('#lau').onclick = lauStart;
+  }});
+}
+
+/* =====================================================================
+   LEILÃO DE TEMPO
+   ===================================================================== */
+const LT = Object.assign({ goal:10, minT:3, maxT:10 }, store.get('ci-lt', {}) || {});
+LT.goal = Math.max(3, Math.min(50, +LT.goal || 10));
+let LTG = null;
+function ltSetup(){
+  tag('Leilão de tempo');
+  render(`<section>
+    <h1>Leilão de tempo</h1>
+    <p>O site sorteia um tempo-alvo. Aí começa o leilão ao contrário: cada um promete o quanto vai errar, e quem promete <strong style="color:var(--fg)">o menor erro</strong> leva. Começa em 1,00s e vai baixando. Quem levar tem que cumprir no cronômetro escondido: cumpriu, +2 pontos; falhou, todo mundo menos ele ganha +1. <strong style="color:var(--fg)">Quem chegar a ${LT.goal} pontos primeiro ganha.</strong></p>
+    <div class="box">
+      <h2>Jogadores (${S.players.length})</h2>
+      <ul class="players">${S.players.map((p,i)=>`<li><span class="n">${String(i+1).padStart(2,'0')}</span><span class="name">${esc(p)}</span><button class="x" aria-label="Remover ${esc(p)}" data-rm="${i}">×</button></li>`).join('')}</ul>
+      <form class="add" id="addForm"><input type="text" id="newName" placeholder="Nome do jogador" maxlength="18" autocomplete="off"><button class="ghost" type="submit">Adicionar</button></form>
+    </div>
+    <div class="box">
+      <div class="row"><span>Pontos pra vencer</span><div class="step"><button data-lr="-1" aria-label="Menos">−</button><output>${LT.goal}</output><button data-lr="1" aria-label="Mais">+</button></div></div>
+      <div class="row"><span>Tempo sorteado entre</span><div class="step"><button data-lx="-1" aria-label="Diminuir">−</button><output>${LT.minT}–${LT.maxT}s</output><button data-lx="1" aria-label="Aumentar">+</button></div></div>
+    </div>
+    <button class="btn" id="start" ${S.players.length<2?'disabled':''}>${S.players.length<2?'Precisa de 2 jogadores':'Começar'}</button>
+  </section>`, 'lt-setup');
+  $('#addForm').onsubmit = e => { e.preventDefault(); const v=$('#newName').value.trim(); if(v && !S.players.includes(v)){S.players.push(v);persist();ltSetup();$('#newName').focus();} };
+  $$('[data-rm]').forEach(b=>b.onclick=()=>{S.players.splice(+b.dataset.rm,1);persist();ltSetup();});
+  $$('[data-lr]').forEach(b=>b.onclick=()=>{ LT.goal=Math.max(3,Math.min(50,LT.goal+(+b.dataset.lr))); store.set('ci-lt',LT); ltSetup(); });
+  $$('[data-lx]').forEach(b=>b.onclick=()=>{ LT.maxT=Math.max(LT.minT+3,Math.min(60,LT.maxT+(+b.dataset.lx)*5)); store.set('ci-lt',LT); ltSetup(); });
+  $('#start').onclick = () => { LTG = { round:0, pts:Object.fromEntries(S.players.map(p=>[p,0])) }; ltRound(); };
+}
+function ltRound(){
+  LTG.round++; LTG.target = randTarget(LT.minT, LT.maxT); LTG.bid = 1.00; LTG.leader = null;
+  ltBid();
+}
+function ltBid(){
+  tag(`Rodada ${LTG.round} · até ${LT.goal}`);
+  const steps = [0.05, 0.10, 0.25];
+  render(`<section>
+    <div class="panel">${led(ledTime(LTG.target))}<div class="plabel">tempo-alvo desta rodada</div></div>
+    <div class="bid">${LTG.leader ? `<span>promessa</span><b>${LTG.bid.toFixed(2)}s</b><span>de ${esc(LTG.leader)}</span>` : `<span>quem promete errar menos de</span><b>1,00s</b><span>?</span>`}</div>
+    <div class="bidders">${S.players.map(w=>{ const isLead = LTG.leader===w; return `<div class="bidder ${isLead?'lead':''}">
+      <span class="bn">${esc(w)}${isLead?' 🔨':''}</span><span class="bm">${LTG.pts[w]}/${LT.goal} pts</span>
+      <div class="bb">${steps.map(d=>{ const v = Math.round((LTG.bid - d)*100)/100; return `<button data-lt="${esc(w)}:${v}" ${v<0.01||isLead?'disabled':''}>−${d.toFixed(2)}</button>`; }).join('')}</div></div>`; }).join('')}</div>
+    <button class="hammer" id="hammer" ${LTG.leader?'':'disabled'}>${LTG.leader?`Fechou: ${esc(LTG.leader)} promete errar menos de ${LTG.bid.toFixed(2)}s`:'Ninguém promete?'}</button>
+    ${LTG.leader?'':'<button class="ghost" id="skip">Ninguém quer, sortear outro tempo</button>'}
+  </section>`, 'lt-bid');
+  $$('[data-lt]').forEach(b=>b.onclick=()=>{ const [w,v]=b.dataset.lt.split(':'); LTG.bid=+v; LTG.leader=w; try{ beep(1300,.05); }catch(e){} ltBid(); });
+  $('#hammer').onclick = ltKick;
+  const s=$('#skip'); if(s) s.onclick = () => { LTG.round--; ltRound(); };
+}
+function ltKick(){
+  const w = LTG.leader, promise = LTG.bid*1000;
+  render(`<section class="center"><h2>Hora de cumprir</h2><div class="who">${esc(w)}</div><p>Prometeu errar menos de <strong style="color:var(--fg)">${LTG.bid.toFixed(2)}s</strong> no alvo de ${ledTime(LTG.target)}s.</p><button class="btn" id="go">Sou ${esc(w)}, vou cumprir</button></section>`, 'lt-ready');
+  $('#go').onclick = () => {
+    const sw = stopwatch({ pre: led(ledTime(LTG.target)), label:`alvo · promessa ${LTG.bid.toFixed(2)}s`, onStop: ms => {
+      const err = Math.abs(ms-LTG.target), ok = err <= promise;
+      if(ok) LTG.pts[w] += 2; else S.players.filter(p=>p!==w).forEach(p=>LTG.pts[p]+=1);
+      try{ beep(ok?1700:400,.3); }catch(e){}
+      setTimeout(()=>{
+        const last = Object.values(LTG.pts).some(v=>v>=LT.goal);
+        render(`<section>
+          <div class="verdict" style="color:var(${ok?'--led':'--imp'})">${ok?'Cumpriu!':'Falhou!'}</div>
+          <div class="panel">${led(ledTime(ms), ok?'':'red')}<div class="plabel">errou ${(err/1000).toFixed(2)}s · prometeu ${LTG.bid.toFixed(2)}s</div></div>
+          <p class="center">${ok?`<strong style="color:var(--fg)">${esc(w)}</strong> segurou a promessa e leva 2 pontos.`:`${esc(w)} prometeu demais. Todo mundo menos ele ganha 1 ponto.`}</p>
+          <div class="box"><h2>Placar · vence com ${LT.goal}</h2><ul class="score">${Object.keys(LTG.pts).sort((a,b)=>LTG.pts[b]-LTG.pts[a]).map(p=>`<li><span>${esc(p)}</span><span>${LTG.pts[p]}</span></li>`).join('')}</ul></div>
+          <button class="btn" id="next">${last?'Ver o campeão':'Próxima rodada'}</button>
+        </section>`, 'lt-res');
+        $('#next').onclick = () => last ? ltEnd() : ltRound();
+      }, 500);
+    }});
+    render(`<section>${sw.html}</section>`, 'lt-kick'); sw.bind();
+  };
+}
+function ltEnd(){
+  const r = Object.keys(LTG.pts).sort((a,b)=>LTG.pts[b]-LTG.pts[a]);
+  celebrate({ sub:'rei das promessas', name:r[0], detail:`${LTG.pts[r[0]]} pontos`, btn:'Ver o placar', onNext: () => {
+    render(`<section><div class="box"><h2>Placar final</h2><ul class="score">${r.map(p=>`<li><span>${esc(p)}</span><span>${LTG.pts[p]}</span></li>`).join('')}</ul></div>
+      <button class="btn" id="again">Jogar de novo</button><button class="ghost" id="edit">Mudar jogadores</button></section>`, 'lt-end');
+    $('#again').onclick = () => { LTG = { round:0, pts:Object.fromEntries(S.players.map(p=>[p,0])) }; ltRound(); }; $('#edit').onclick = ltSetup;
+  }});
+}
+
+/* =====================================================================
+   MENTIROSO DO TEMPO
+   ===================================================================== */
+const MT = Object.assign({ rounds:5, minT:3, maxT:10 }, store.get('ci-ment', {}) || {});
+let MG = null;
+function mentSetup(){
+  tag('Mentiroso');
+  render(`<section>
+    <h1>Mentiroso do tempo</h1>
+    <p>Todo mundo tenta o mesmo tempo-alvo no cronômetro escondido. Só você vê o seu resultado, e aí você <strong style="color:var(--fg)">declara</strong> quanto deu, podendo mentir. Quem declarar o tempo mais perto do alvo ganha 2 pontos. Mas a galera pode gritar "Mentira!" em uma declaração: se era mentira, quem acusou ganha 2 e o mentiroso fica de fora; se era verdade, o acusado ganha 2 e quem acusou perde 1.</p>
+    <div class="box">
+      <h2>Jogadores (${S.players.length})</h2>
+      <ul class="players">${S.players.map((p,i)=>`<li><span class="n">${String(i+1).padStart(2,'0')}</span><span class="name">${esc(p)}</span><button class="x" aria-label="Remover ${esc(p)}" data-rm="${i}">×</button></li>`).join('')}</ul>
+      <form class="add" id="addForm"><input type="text" id="newName" placeholder="Nome do jogador" maxlength="18" autocomplete="off"><button class="ghost" type="submit">Adicionar</button></form>
+    </div>
+    <div class="box">
+      <div class="row"><span>Rodadas</span><div class="step"><button data-mr="-1" aria-label="Menos">−</button><output>${MT.rounds}</output><button data-mr="1" aria-label="Mais">+</button></div></div>
+      <div class="row"><span>Tempo sorteado entre</span><div class="step"><button data-mx="-1" aria-label="Diminuir">−</button><output>${MT.minT}–${MT.maxT}s</output><button data-mx="1" aria-label="Aumentar">+</button></div></div>
+      <p class="hint">Mentira é qualquer declaração que fuja mais de 0,05s do tempo de verdade.</p>
+    </div>
+    <button class="btn" id="start" ${S.players.length<2?'disabled':''}>${S.players.length<2?'Precisa de 2 jogadores':'Começar'}</button>
+  </section>`, 'mt-setup');
+  $('#addForm').onsubmit = e => { e.preventDefault(); const v=$('#newName').value.trim(); if(v && !S.players.includes(v)){S.players.push(v);persist();mentSetup();$('#newName').focus();} };
+  $$('[data-rm]').forEach(b=>b.onclick=()=>{S.players.splice(+b.dataset.rm,1);persist();mentSetup();});
+  $$('[data-mr]').forEach(b=>b.onclick=()=>{ MT.rounds=Math.max(1,Math.min(15,MT.rounds+(+b.dataset.mr))); store.set('ci-ment',MT); mentSetup(); });
+  $$('[data-mx]').forEach(b=>b.onclick=()=>{ MT.maxT=Math.max(MT.minT+3,Math.min(60,MT.maxT+(+b.dataset.mx)*5)); store.set('ci-ment',MT); mentSetup(); });
+  $('#start').onclick = () => { MG = { round:0, pts:Object.fromEntries(S.players.map(p=>[p,0])) }; mentRound(); };
+}
+function mentRound(){
+  MG.round++; MG.target = randTarget(MT.minT, MT.maxT); MG.order = shuffle([...S.players]); MG.idx = 0; MG.res = {};
+  mentPass();
+}
+function mentPass(){
+  tag(`Mentiroso · ${MG.round}/${MT.rounds}`);
+  const p = MG.order[MG.idx];
+  render(`<section class="center">
+    <div class="panel">${led(ledTime(MG.target))}<div class="plabel">tempo-alvo · todo mundo tenta esse</div></div>
+    <h2>Passe o celular para</h2><div class="who">${esc(p)}</div>
+    <p>${MG.idx} de ${MG.order.length} já declararam.</p>
+    <button class="btn" id="go">Sou ${esc(p)}, vou cronometrar</button>
+  </section>`, 'mt-pass');
+  $('#go').onclick = () => {
+    const sw = stopwatch({ pre: led(ledTime(MG.target)), label:`alvo · vez de ${esc(p)}`, onStop: ms => setTimeout(()=>mentDeclare(p, ms), 400) });
+    render(`<section>${sw.html}</section>`, 'mt-kick'); sw.bind();
+  };
+}
+function mentDeclare(p, ms){
+  const s = Math.floor(ms/1000), c = Math.round((ms%1000)/10);
+  render(`<section>
+    <h2 class="center">Só ${esc(p)} vê isso</h2>
+    <div class="panel">${led(ledTime(ms))}<div class="plabel">seu tempo de verdade · alvo ${ledTime(MG.target)}s</div></div>
+    <p class="center">Agora declare pra galera quanto deu. Pode falar a verdade… ou não.</p>
+    <form id="decl" class="box"><h2>Eu declaro que fiz</h2>
+      <div class="timein"><input type="number" id="ds" min="0" max="99" inputmode="numeric" value="${s}" aria-label="segundos"><span class="dot">.</span><input type="number" id="dc" min="0" max="99" inputmode="numeric" value="${String(c).padStart(2,'0')}" aria-label="centésimos"></div>
+      <p class="hint">segundos . centésimos (ex.: 6 . 85)</p>
+      <button class="btn" type="submit">Declarar e esconder</button></form>
+  </section>`, 'mt-decl');
+  $('#decl').onsubmit = e => {
+    e.preventDefault();
+    const d = (Math.max(0,Math.min(99,+$('#ds').value||0)))*1000 + Math.max(0,Math.min(99,+$('#dc').value||0))*10;
+    MG.res[p] = { real: ms, said: d, lie: Math.abs(d-ms) > 50 };
+    MG.idx++; MG.idx < MG.order.length ? mentPass() : mentClaims();
+  };
+}
+function mentClaims(){
+  tag(`Mentiroso · acusações`);
+  const T = MG.target;
+  const rows = MG.order.map(p=>({ p, said:MG.res[p].said, d:Math.abs(MG.res[p].said-T) })).sort((a,b)=>a.d-b.d);
+  render(`<section>
+    <h1 class="center">Quem está mentindo?</h1>
+    <div class="panel">${led(ledTime(T))}<div class="plabel">alvo</div></div>
+    <div class="box"><h2>Declarações (do mais perto ao mais longe)</h2><div class="claims">${rows.map((r,i)=>`<div class="claim ${i===0?'best':''}"><span class="cn">${esc(r.p)}</span><span class="ct">${fmt(r.said)}</span><span class="cr">erro ${(r.d/1000).toFixed(2)}s</span></div>`).join('')}</div></div>
+    <p class="center">Alguém grita "Mentira!"? Toque no acusado. Se ninguém acusar, o mais perto leva.</p>
+    <div class="vote">${rows.map(r=>`<button data-acc="${esc(r.p)}">Mentira, ${esc(r.p)}!</button>`).join('')}</div>
+    <button class="btn" id="none">Ninguém acusa, acreditamos</button>
+  </section>`, 'mt-claims');
+  $$('[data-acc]').forEach(b=>b.onclick=()=>mentWho(b.dataset.acc));
+  $('#none').onclick = () => mentResolve(null, null);
+}
+function mentWho(acc){
+  render(`<section><h1 class="center">Quem acusou ${esc(acc)}?</h1>
+    <div class="vote">${S.players.filter(x=>x!==acc).map(x=>`<button data-by="${esc(x)}">${esc(x)}</button>`).join('')}</div>
+    <button class="ghost" id="back">Voltar</button></section>`, 'mt-who');
+  $$('[data-by]').forEach(b=>b.onclick=()=>mentResolve(acc, b.dataset.by));
+  $('#back').onclick = mentClaims;
+}
+function mentResolve(acc, by){
+  const T = MG.target, R = MG.res;
+  let msg = '';
+  let excluded = null;
+  if(acc){
+    if(R[acc].lie){ MG.pts[by] += 2; excluded = acc; msg = `<strong style="color:var(--imp)">${esc(acc)} mentiu!</strong> Disse ${fmt(R[acc].said)}, mas fez ${fmt(R[acc].real)}. ${esc(by)} ganha 2 pontos e ${esc(acc)} fica fora da disputa.`; }
+    else { MG.pts[acc] += 2; MG.pts[by] -= 1; msg = `<strong style="color:var(--led)">${esc(acc)} falou a verdade!</strong> Fez ${fmt(R[acc].real)} mesmo. ${esc(acc)} ganha 2 pontos e ${esc(by)} perde 1 pela acusação.`; }
+  }
+  const cands = MG.order.filter(p=>p!==excluded).sort((a,b)=>Math.abs(R[a].said-T)-Math.abs(R[b].said-T));
+  const best = cands[0];
+  if(best){ MG.pts[best] += 2; }
+  try{ beep(acc && R[acc].lie ? 400 : 1600, .3); }catch(e){}
+  const last = MG.round >= MT.rounds;
+  render(`<section>
+    <div class="verdict" style="color:var(--warn)">${best?`${esc(best)} chegou mais perto`:'Ninguém pontuou'}</div>
+    ${msg?`<p class="center">${msg}</p>`:''}
+    <p class="center">${best?`Declaração de ${esc(best)} (${fmt(R[best].said)}) foi a mais perto do alvo${excluded?' entre quem sobrou':''}: +2 pontos.`:''}</p>
+    <div class="box"><h2>O que cada um disse e o que fez de verdade</h2><div class="claims">${MG.order.map(p=>`<div class="claim ${R[p].lie?'lie':'true'} ${p===best?'best':''}"><span class="cn">${esc(p)}</span><span class="ct">disse ${fmt(R[p].said)}</span><span class="cr">fez de verdade ${fmt(R[p].real)}${R[p].lie?' · mentiu':' · verdade'}${p===excluded?' · pego!':''}</span></div>`).join('')}</div></div>
+    <div class="box"><h2>Placar</h2><ul class="score">${Object.keys(MG.pts).sort((a,b)=>MG.pts[b]-MG.pts[a]).map(p=>`<li><span>${esc(p)}</span><span>${MG.pts[p]}</span></li>`).join('')}</ul></div>
+    <button class="btn" id="next">${last?'Ver o campeão':'Próxima rodada'}</button>
+  </section>`, 'mt-res');
+  $('#next').onclick = () => last ? mentEnd() : mentRound();
+}
+function mentEnd(){
+  const r = Object.keys(MG.pts).sort((a,b)=>MG.pts[b]-MG.pts[a]);
+  celebrate({ sub:'o maior cara de pau', name:r[0], detail:`${MG.pts[r[0]]} pontos`, btn:'Ver o placar', onNext: () => {
+    render(`<section><div class="box"><h2>Placar final</h2><ul class="score">${r.map(p=>`<li><span>${esc(p)}</span><span>${MG.pts[p]}</span></li>`).join('')}</ul></div>
+      <button class="btn" id="again">Jogar de novo</button><button class="ghost" id="edit">Mudar jogadores</button></section>`, 'mt-end');
+    $('#again').onclick = () => { MG = { round:0, pts:Object.fromEntries(S.players.map(p=>[p,0])) }; mentRound(); }; $('#edit').onclick = mentSetup;
+  }});
+}
+
+/* =====================================================================
+   TREINO
+   ===================================================================== */
+let soloHist = store.get('ci-solo', []) || [];
+let soloTarget = 0;
+function solo(newTarget){
+  if(newTarget) soloTarget = randTarget(S.minT, S.maxT);
+  tag('Treino');
+  const show = !!S.soloShow;
+  const sw = stopwatch({ pre: led(ledTime(soloTarget)), label:'tempo-alvo · segundos', show, onStop: ms => setTimeout(()=>soloResult(ms), show?700:350) });
+  render(`<section>
+    ${sw.html}
+    <div class="box"><div class="row"><span>Tempo sorteado entre</span>
+      <div class="step"><button data-r="-1" aria-label="Diminuir">−</button><output>${S.minT}–${S.maxT}s</output><button data-r="1" aria-label="Aumentar">+</button></div></div>
+      ${showTimeRow(show, false)}</div>
+    ${statsHtml()}
+  </section>`, 'solo');
+  sw.bind();
+  bindShow(v=>{ S.soloShow=v; persist(); solo(false); });
+  $$('[data-r]').forEach(b=>b.onclick=()=>{ S.maxT=Math.max(S.minT+4,Math.min(60,S.maxT+(+b.dataset.r)*5)); persist(); solo(true); });
+}
+function soloResult(ms){
+  const err = ms - soloTarget, a = Math.abs(err)/1000;
+  soloHist.unshift({t:soloTarget, e:err}); soloHist = soloHist.slice(0,50); store.set('ci-solo', soloHist);
+  const [g,c] = a<0.1?['Perfeito!','--crew']:a<0.3?['Muito bom','--crew']:a<0.7?['Quase','--fg']:['Longe','--imp'];
+  render(`<section>
+    <div class="grade" style="color:var(${c})">${g}</div>
+    <div class="panel">${led(ledTime(ms), a<0.7?'':'red')}<div class="plabel">seu tempo · alvo ${soloTarget/1000}s</div></div>
+    <p class="center">Você parou <strong style="color:var(--fg)">${a.toFixed(2)}s ${err>0?'depois':'antes'}</strong> do tempo.</p>
+    <button class="btn" id="again">Novo tempo</button>
+    <button class="ghost" id="same">Repetir ${soloTarget/1000}s</button>
+    ${statsHtml()}
+  </section>`, 'solo-res');
+  $('#again').onclick=()=>solo(true); $('#same').onclick=()=>solo(false);
+}
+function statsHtml(){
+  if(!soloHist.length) return '';
+  const errs = soloHist.map(h=>Math.abs(h.e)/1000);
+  const n = Math.min(10,errs.length), avg = errs.slice(0,n).reduce((s,x)=>s+x,0)/n;
+  return `<div class="box"><h2>Seu treino</h2><div class="stats">
+    <div><b>${soloHist.length}</b><span>tentativas</span></div>
+    <div><b>${Math.min(...errs).toFixed(2)}s</b><span>melhor erro</span></div>
+    <div><b>${avg.toFixed(2)}s</b><span>erro médio (últ. ${n})</span></div></div></div>`;
+}
+
+/* ---------- boot ---------- */
+home();
+</script>
+</body>
+</html>

@@ -1,0 +1,945 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0c100f">
+<title>Cronômetro Impostor</title>
+<meta name="description" content="Acerte o tempo no cronômetro escondido e descubra quem é o impostor. Jogue online com salas abertas ou privadas, no mesmo celular ou treinando sozinho.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Chivo+Mono:wght@400;700&display=swap">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='55' r='38' fill='%23050706' stroke='%233dff74' stroke-width='8'/%3E%3Crect x='42' y='4' width='16' height='12' rx='3' fill='%233dff74'/%3E%3Cpath d='M50 55 L50 30' stroke='%233dff74' stroke-width='8' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+/* Layout: one centered column, one screen at a time — a black LED timer panel and a big arcade push button */
+:root{
+  --bg:#0c100f; --panel:#151b19; --line:#26302c; --fg:#e9f2ec; --muted:#8ea197;
+  --led:#3dff74; --led-off:rgba(61,255,116,.07); --ink:#04140a;
+  --crew:#3dff74; --imp:#ff4d5e; --warn:#ffc53d;
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --mono:"Chivo Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--display);font-size:16px;padding-inline:16px;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+  background-image:radial-gradient(circle at 50% -10%,#14261c 0,transparent 55%);background-attachment:fixed}
+.app{max-width:460px;margin:0 auto;padding-block:16px 32px;min-height:100%;display:flex;flex-direction:column;gap:20px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.hleft{display:flex;align-items:center;gap:10px;min-width:0}
+.brand{font-weight:800;font-size:1.1rem;background:none;color:var(--fg);padding:0;white-space:nowrap}
+.brand span{color:var(--led)}
+.back{background:var(--panel);color:var(--fg);border:1px solid var(--line);padding:8px 12px;font-weight:800;font-size:.95rem;white-space:nowrap}
+.app:has(#backBtn:not([hidden])) .brand{display:none}
+.hright{display:flex;align-items:center;gap:10px}
+.tag{font-family:var(--mono);font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;white-space:nowrap}
+.snd{background:var(--panel);color:var(--fg);border:1px solid var(--line);padding:6px 10px;font-family:var(--mono);font-size:.72rem;letter-spacing:.08em}
+section{display:flex;flex-direction:column;gap:16px}
+h1{font-size:2rem;line-height:1.05;margin:0;text-wrap:balance;font-weight:800}
+h2{font-size:.78rem;margin:0;font-family:var(--mono);font-weight:400;color:var(--muted);text-transform:uppercase;letter-spacing:.14em}
+p{margin:0;color:var(--muted);line-height:1.5}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px}
+button{font:inherit;cursor:pointer;border:0;border-radius:12px}
+button:focus-visible,input:focus-visible{outline:3px solid var(--led);outline-offset:3px}
+.btn{background:var(--led);color:var(--ink);font-weight:800;font-size:1.1rem;padding:16px;width:100%}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn.red{background:var(--imp);color:#1a0306}
+.ghost{background:transparent;color:var(--fg);border:1px solid var(--line);padding:12px 14px;font-weight:500}
+.ghost:disabled{opacity:.4}
+.players{display:flex;flex-direction:column;gap:8px;margin:0;padding:0;list-style:none}
+.players li{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg);border-radius:10px;border:1px solid var(--line);min-height:46px}
+.players li.off{opacity:.45}
+.players li .n{font-family:var(--mono);color:var(--muted);font-size:.8rem;width:1.6em}
+.players li .name{flex:1;min-width:0;overflow-wrap:anywhere}
+.players li .badge{font-family:var(--mono);font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.players li .badge.ok{color:var(--led)}
+.x{background:transparent;color:var(--muted);font-size:1.3rem;line-height:1;padding:2px 8px}
+.add,.inline{display:flex;gap:8px}
+input[type=text]{flex:1;min-width:0;font:inherit;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:12px}
+input.code{font-family:var(--mono);text-transform:uppercase;letter-spacing:.3em;font-size:1.2rem;text-align:center}
+label.lbl{font-size:.85rem;color:var(--muted);display:flex;flex-direction:column;gap:6px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.step{display:flex;align-items:center;gap:6px}
+.step button{width:38px;height:38px;background:var(--bg);color:var(--fg);border:1px solid var(--line);font-size:1.2rem}
+.step button:disabled{opacity:.3}
+.step output{font-family:var(--mono);font-weight:700;min-width:4.4em;text-align:center;font-variant-numeric:tabular-nums}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px}
+.seg button{background:transparent;color:var(--muted);padding:10px;font-weight:800}
+.seg button[aria-pressed=true]{background:var(--panel);color:var(--fg);box-shadow:inset 0 0 0 1px var(--line)}
+.hint{font-size:.85rem}
+.err{color:var(--imp);font-size:.9rem}
+.err:empty{display:none}
+.center{text-align:center}
+
+/* LED panel */
+.panel{background:#050706;border-radius:12px;padding:18px 16px 12px;border:1px solid #1d2622;
+  box-shadow:inset 0 0 0 4px #0f1412, 0 10px 30px rgba(0,0,0,.5);display:flex;flex-direction:column;align-items:center;gap:8px}
+.led{display:flex;align-items:flex-end;justify-content:center;gap:2%;width:100%;max-width:340px}
+.led svg{height:auto;display:block}
+.led .dg{width:21%}
+.led .dt{width:5%}
+.led .on{fill:var(--led);filter:drop-shadow(0 0 4px var(--led))}
+.led .off{fill:var(--led-off)}
+.led.red .on{fill:var(--imp);filter:drop-shadow(0 0 4px var(--imp))}
+.led.blink .on{animation:blink 1s steps(2,start) infinite}
+.led.code .dg{width:23%}
+@keyframes blink{to{opacity:.25}}
+.plabel{font-family:var(--mono);font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);text-align:center}
+.bigcode{font-family:var(--mono);font-weight:700;font-size:3rem;letter-spacing:.25em;color:var(--led);text-shadow:0 0 12px rgba(61,255,116,.5);padding-left:.25em}
+
+/* arcade push button */
+.pushwrap{display:grid;place-items:center;padding-block:8px}
+.push{width:min(58vw,220px);aspect-ratio:1;border-radius:50%;position:relative;color:var(--ink);font-weight:800;font-size:1.3rem;letter-spacing:.06em;
+  background:#111;padding:14px;box-shadow:0 8px 0 #000, 0 14px 30px rgba(0,0,0,.6);touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+.push span{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;
+  background:radial-gradient(circle at 40% 30%,#c9ffd9 0,var(--led) 35%,#13a845 100%);
+  box-shadow:0 0 30px rgba(61,255,116,.45), inset 0 -8px 16px rgba(0,0,0,.25);transition:transform .06s}
+.push.on span{background:radial-gradient(circle at 40% 30%,#ffd0d5 0,var(--imp) 35%,#a8152a 100%);box-shadow:0 0 34px rgba(255,77,94,.5), inset 0 -8px 16px rgba(0,0,0,.25);color:#1a0306}
+.push:active span,.push.pressed span{transform:translateY(4px) scale(.97)}
+.push:disabled{cursor:default;opacity:.6}
+.keyhint{font-size:.8rem;text-align:center}
+@media (prefers-reduced-motion:reduce){.led.blink .on{animation:none}.push span{transition:none}}
+
+.role{font-size:2.2rem;font-weight:800;text-align:center;line-height:1}
+.role.imp{color:var(--imp)}
+.who{font-size:2.6rem;font-weight:800;color:var(--led);text-align:center;overflow-wrap:anywhere}
+.bars{display:flex;flex-direction:column;gap:10px}
+.bar{display:grid;grid-template-columns:minmax(0,7em) 1fr auto;align-items:center;gap:10px}
+.bar .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar .track{height:14px;background:var(--bg);border-radius:7px;position:relative;border:1px solid var(--line)}
+.bar .fill{position:absolute;inset:0 auto 0 0;border-radius:7px;background:var(--muted)}
+.bar.imp .fill{background:var(--imp)}
+.bar.crew .fill{background:var(--crew)}
+.bar .t{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:.9rem}
+.target{position:absolute;top:-5px;bottom:-5px;width:2px;background:var(--fg)}
+.vote{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.vote button{background:var(--panel);color:var(--fg);border:1px solid var(--line);padding:14px 10px;overflow-wrap:anywhere}
+.vote button[aria-pressed=true]{border-color:var(--imp);background:var(--imp);color:#1a0306;font-weight:800}
+.vote button:disabled:not([aria-pressed=true]){opacity:.45}
+.vote .skip{grid-column:1/-1;background:transparent;color:var(--muted)}
+.score{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
+.score li{display:flex;justify-content:space-between;gap:10px;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.verdict{font-size:1.8rem;font-weight:800;text-align:center;text-wrap:balance}
+.rules{font-size:.9rem}
+.rules ol{margin:0;padding-left:1.2em;color:var(--muted);line-height:1.55;display:flex;flex-direction:column;gap:4px}
+.modes{display:flex;flex-direction:column;gap:12px}
+.mode{background:var(--panel);border:1px solid var(--line);color:var(--fg);text-align:left;padding:20px;display:flex;flex-direction:column;gap:6px}
+.mode:hover{border-color:var(--led)}
+.mode .mt{font-size:1.5rem;font-weight:800}
+.mode .md{color:var(--muted);line-height:1.45}
+.mode.online .mt{color:var(--warn)} .mode.imp .mt{color:var(--imp)} .mode.solo .mt{color:var(--led)}
+.grade{font-size:2rem;font-weight:800;text-align:center}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.stats div{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 4px}
+.stats b{display:block;font-family:var(--mono);font-size:1.2rem;font-variant-numeric:tabular-nums}
+.stats span{font-size:.75rem;color:var(--muted)}
+.roomlist{display:flex;flex-direction:column;gap:8px}
+.roomitem{display:flex;align-items:center;gap:12px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;color:var(--fg);text-align:left;width:100%}
+.roomitem .rn{flex:1;min-width:0;font-weight:800;overflow-wrap:anywhere}
+.roomitem .rs{font-family:var(--mono);font-size:.75rem;color:var(--muted);white-space:nowrap}
+.roomitem .go{color:var(--led);font-weight:800;white-space:nowrap}
+.roomitem:disabled{opacity:.5}
+.empty{color:var(--muted);text-align:center;padding:12px;font-size:.9rem}
+.pill{display:inline-block;font-family:var(--mono);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:99px;border:1px solid var(--line);color:var(--muted)}
+.pill.pub{color:var(--warn);border-color:rgba(255,197,61,.4)}
+.pill.priv{color:var(--led);border-color:rgba(61,255,116,.35)}
+.cd{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--warn)}
+.conn{font-family:var(--mono);font-size:.75rem;color:var(--warn);text-align:center}
+/* chat */
+.mode.word .mt{color:#7cc4ff}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:var(--bg);color:var(--muted);border:1px solid var(--line);padding:8px 12px;border-radius:99px;font-size:.9rem}
+.chip[aria-pressed=true]{background:var(--led);color:var(--ink);border-color:var(--led);font-weight:800}
+.secret{font-size:2.6rem;font-weight:800;text-align:center;color:var(--led);overflow-wrap:anywhere;line-height:1.05;text-shadow:0 0 14px rgba(61,255,116,.35)}
+.secret.imp{color:var(--imp);text-shadow:0 0 14px rgba(255,77,94,.35)}
+.cluetab{width:100%;border-collapse:collapse;font-size:.92rem}
+.cluetab th,.cluetab td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top;overflow-wrap:anywhere}
+.cluetab th{font-family:var(--mono);font-weight:400;font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+.cluetab tr.now td{color:var(--led);font-weight:800}
+.cluetab tr.imp td:first-child{color:var(--imp);font-weight:800}
+.cluewrap{overflow-x:auto}
+.chat{display:flex;flex-direction:column;gap:10px}
+.chatlog{max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;font-size:.92rem;overscroll-behavior:contain}
+.chatlog .m{line-height:1.35;overflow-wrap:anywhere}
+.chatlog .m b{color:var(--led);margin-right:6px}
+.chatlog .m.me b{color:var(--warn)}
+.chatlog .m.sys{color:var(--muted);font-family:var(--mono);font-size:.78rem}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="hleft"><button class="back" id="backBtn" hidden>‹ Início</button><button class="brand" id="homeBtn" aria-label="Voltar ao início">Cronômetro <span>Impostor</span></button></div>
+    <div class="hright"><span class="tag" id="roundTag">Início</span><button class="snd" id="sndBtn" aria-pressed="true">SOM ON</button></div>
+  </header>
+  <main id="screen"></main>
+  <div class="box chat" id="chatBox" hidden>
+    <h2>Conversa</h2>
+    <div class="chatlog" id="chatLog" aria-live="polite"></div>
+    <form class="inline" id="chatForm"><input type="text" id="chatInput" maxlength="200" placeholder="Escreva pra sala" autocomplete="off"><button class="ghost" type="submit">Enviar</button></form>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = ms => ms == null ? '—' : (ms/1000).toFixed(2) + 's';
+const shuffle = a => { for (let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v==null ? d : JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+};
+
+/* ---------- seven-segment LED ---------- */
+const SEG = {
+  a:"12,4 48,4 52,8 48,12 12,12 8,8", b:"52,10 56,14 56,44 52,48 48,44 48,14", c:"52,52 56,56 56,86 52,90 48,86 48,56",
+  d:"12,88 48,88 52,92 48,96 12,96 8,92", e:"8,52 12,56 12,86 8,90 4,86 4,56", f:"8,10 12,14 12,44 8,48 4,44 4,14",
+  g:"12,46 48,46 52,50 48,54 12,54 8,50"
+};
+const MAP = {'0':'abcdef','1':'bc','2':'abged','3':'abgcd','4':'fgbc','5':'afgcd','6':'afgedc','7':'abc','8':'abcdefg','9':'abcdfg','-':'g',' ':''};
+function digit(ch){
+  const on = MAP[ch] ?? '';
+  return `<svg class="dg" viewBox="0 0 60 100" aria-hidden="true"><g transform="skewX(-6) translate(6 0)">${
+    Object.keys(SEG).map(k=>`<polygon class="${on.includes(k)?'on':'off'}" points="${SEG[k]}"/>`).join('')}</g></svg>`;
+}
+function led(str, cls=''){
+  let html='';
+  for(const ch of str) html += ch==='.' ? `<svg class="dt" viewBox="0 0 14 100" aria-hidden="true"><circle class="on" cx="6" cy="91" r="5.5"/></svg>` : digit(ch);
+  return `<div class="led ${cls}" role="img" aria-label="${str.includes('-')?'tempo escondido':str+' segundos'}">${html}</div>`;
+}
+const ledTime = ms => Math.min(ms/1000,99.99).toFixed(2).padStart(5,'0');
+
+/* ---------- sound ---------- */
+let ac=null, soundOn = store.get('ci-sound', true);
+function beep(freq=1400, dur=.13){
+  if(soundOn){
+    try{
+      ac = ac || new (window.AudioContext||window.webkitAudioContext)();
+      if(ac.state==='suspended') ac.resume();
+      const o=ac.createOscillator(), g=ac.createGain(), t=ac.currentTime;
+      o.type='square'; o.frequency.value=freq;
+      g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.18,t+.008); g.gain.setValueAtTime(0.18,t+dur-.02); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+      o.connect(g).connect(ac.destination); o.start(t); o.stop(t+dur+.02);
+    }catch(e){}
+  }
+  try{ navigator.vibrate && navigator.vibrate(40); }catch(e){}
+}
+function paintSound(){ const b=$('#sndBtn'); b.textContent = soundOn?'SOM ON':'SOM OFF'; b.setAttribute('aria-pressed', soundOn); }
+$('#sndBtn').onclick = ()=>{ soundOn=!soundOn; store.set('ci-sound', soundOn); paintSound(); if(soundOn) beep(); };
+paintSound();
+
+/* ---------- stopwatch (push button + LED) ---------- */
+let keyHandler=null, swTimer=null;
+function stopSwTimer(){ if(swTimer){ clearInterval(swTimer); swTimer=null; } }
+function stopwatch({ pre, label, onStop, show=false }){
+  let t0=null, done=false;
+  const html = `
+    <div class="panel" id="panel">${pre}<div class="plabel">${label}</div></div>
+    <div class="pushwrap"><button class="push" id="push" aria-label="Iniciar cronômetro"><span id="pushTxt">INICIAR</span></button></div>
+    <p class="keyhint">Aperte o botão: <strong>pi</strong> e começa. Aperte de novo: <strong>pi</strong> e para.<br>Dá pra jogar de olhos fechados.</p>`;
+  function bind(){
+    const btn=$('#push');
+    const press = () => {
+      if(done) return;
+      if(t0===null){
+        t0=performance.now(); beep();
+        btn.classList.add('on'); btn.setAttribute('aria-label','Parar cronômetro'); $('#pushTxt').textContent='PARAR';
+        if(show){
+          const paint = () => { const p=$('#panel'); if(p) p.innerHTML = led(ledTime(performance.now()-t0)) + `<div class="plabel">rodando · tempo visível</div>`; };
+          paint(); stopSwTimer(); swTimer = setInterval(paint, 50);
+        } else {
+          $('#panel').innerHTML = led('--.--','blink') + `<div class="plabel">rodando · tempo escondido</div>`;
+        }
+      } else {
+        const ms=performance.now()-t0; done=true; beep(); stopSwTimer();
+        if(show) $('#panel').innerHTML = led(ledTime(ms)) + `<div class="plabel">parou aqui</div>`;
+        btn.classList.remove('on'); btn.disabled=true; $('#pushTxt').textContent='OK';
+        if(keyHandler){ document.removeEventListener('keydown', keyHandler); keyHandler=null; }
+        onStop(ms);
+      }
+    };
+    btn.addEventListener('pointerdown', e=>{ e.preventDefault(); btn.classList.add('pressed'); press(); });
+    ['pointerup','pointerleave','pointercancel'].forEach(ev=>btn.addEventListener(ev,()=>btn.classList.remove('pressed')));
+    btn.addEventListener('click', e=>{ if(e.detail===0) press(); });
+    if(keyHandler) document.removeEventListener('keydown', keyHandler);
+    keyHandler = e=>{ if(e.code==='Space' && !e.repeat && document.activeElement!==btn && document.activeElement?.tagName!=='INPUT'){ e.preventDefault(); press(); } };
+    document.addEventListener('keydown', keyHandler);
+  }
+  return { html, bind };
+}
+
+/* ---------- shared bits ---------- */
+function bars(rows, target){
+  const vals = rows.map(r=>r.ms||0);
+  const max = Math.max(target||0, ...vals, 1000) * 1.1;
+  return `<div class="bars">${rows.map(r=>`<div class="bar ${r.cls||''}">
+    <span class="nm">${esc(r.name)}</span>
+    <span class="track">${r.ms!=null?`<span class="fill" style="width:${r.ms/max*100}%"></span>`:''}${target?`<span class="target" style="left:${target/max*100}%"></span>`:''}</span>
+    <span class="t">${fmt(r.ms)}</span></div>`).join('')}</div>`;
+}
+let screenName='home';
+const render = (html, name) => {
+  if(keyHandler){ document.removeEventListener('keydown',keyHandler); keyHandler=null; }
+  stopSwTimer();
+  screenName = name || '';
+  $('#screen').innerHTML = html;
+  if(typeof tickCountdown==='function') tickCountdown();
+};
+const tag = t => $('#roundTag').textContent = t;
+const randTarget = (minT,maxT) => (minT + Math.floor(Math.random()*(maxT-minT+1)))*1000;
+// "Mostrar o tempo correndo" toggle row; readonly shows the value only
+function showTimeRow(on, readonly){
+  return `<div class="row"><span>Mostrar o tempo correndo</span>${readonly
+    ? `<span class="pill ${on?'pub':''}">${on?'Sim':'Não'}</span>`
+    : `<div class="seg" role="group" aria-label="Mostrar o tempo correndo" style="min-width:150px"><button type="button" data-show="0" aria-pressed="${!on}">Não</button><button type="button" data-show="1" aria-pressed="${on}">Sim</button></div>`}</div>
+    <p class="hint">${on?'O visor mostra os segundos correndo. Fica bem mais fácil.':'O visor fica escondido. Você conta de cabeça.'}</p>`;
+}
+const bindShow = fn => $$('[data-show]').forEach(b=>b.onclick=()=>fn(b.dataset.show==='1'));
+
+/* ---------- navigation ---------- */
+let pushed=false;
+function enterMode(fn){ if(!pushed){ try{ history.pushState({ci:1},''); pushed=true; }catch(e){} } $('#backBtn').hidden=false; fn(); }
+function goHome(){ if(pushed){ try{ history.back(); return; }catch(e){} } home(); }
+window.addEventListener('popstate', ()=>{ pushed=false; home(); });
+$('#backBtn').onclick = goHome;
+$('#homeBtn').onclick = goHome;
+
+/* ---------- HOME ---------- */
+function home(){
+  if(ON.code) onlineLeave(true);
+  showChat(false);
+  $('#backBtn').hidden = true;
+  tag('Início');
+  render(`<section>
+    <div class="panel">${led('20.08')}<div class="plabel">aperte · pi · conte · pi</div></div>
+    <h1>Quanto tempo você acha que passou?</h1>
+    <p>O cronômetro roda escondido. Você aperta o botão pra começar e de novo quando acha que chegou no tempo.</p>
+    <div class="modes">
+      <button class="mode imp" id="mImp"><span class="mt">Impostor do cronômetro</span><span class="md">Todo mundo recebe um tempo secreto, menos o impostor. De 3 jogadores pra cima, passando o celular de mão em mão.</span></button>
+      <button class="mode word" id="mWord"><span class="mt">Impostor da palavra</span><span class="md">Todo mundo recebe a mesma palavra, menos o impostor. Cada um fala uma dica por rodada e no fim vocês votam.</span></button>
+      <button class="mode solo" id="mSolo"><span class="mt">Treinar sozinho</span><span class="md">Receba um tempo, pare o cronômetro escondido na hora certa e veja quanto errou.</span></button>
+    </div>
+    <details class="box rules"><summary>Como funciona o impostor</summary><ol>
+      <li>Todo mundo recebe o mesmo tempo secreto, menos o impostor.</li>
+      <li>Cada um aperta o botão (pi), conta de cabeça e aperta de novo (pi) quando acha que deu o tempo.</li>
+      <li>Aparecem os tempos de todos, sem o alvo. Conversem e votem pra eliminar alguém.</li>
+      <li>Eliminaram o impostor: +1 pra cada tripulante. Não eliminaram: o impostor vence e ganha +3. Quem chegou mais perto do alvo ganha +1.</li>
+    </ol></details>
+  </section>`, 'home');
+  $('#mImp').onclick = () => enterMode(localSetup);
+  $('#mWord').onclick = () => enterMode(wordSetup);
+  $('#mSolo').onclick = () => enterMode(() => solo(true));
+}
+
+/* =====================================================================
+   ONLINE
+   ===================================================================== */
+const token = (() => { let t = store.get('ci-token', null); if(!t){ t = Array.from(crypto.getRandomValues(new Uint8Array(12)), b=>b.toString(16).padStart(2,'0')).join(''); store.set('ci-token', t); } return t; })();
+const ON = { socket:null, code:null, state:null, list:[], step:null, stepRound:-1, deadlineAt:null, msg:'' };
+let nick = store.get('ci-nick', '');
+
+function connect(){
+  if(ON.socket) return ON.socket;
+  if(typeof io !== 'function'){ return null; }
+  const s = ON.socket = io({ transports:['websocket','polling'] });
+  s.on('connect', () => {
+    if(ON.code) s.emit('join', { code:ON.code, nick, token }, res => {
+      if(res?.error){ ON.code=null; store.set('ci-room', null); onlineMenu(res.error); }
+      else resetChat(res.chat);
+    });
+    if(screenName==='menu') s.emit('watch-rooms', true);
+    paintConn();
+  });
+  s.on('disconnect', paintConn);
+  s.on('rooms', list => { ON.list = list; if(screenName==='menu') paintRoomList(); });
+  s.on('state', st => { if(!ON.code) return; ON.state = st; ON.deadlineAt = st.remaining!=null ? Date.now()+st.remaining : null; renderRoom(); });
+  s.on('chat', m => { if(ON.code) addChat(m); });
+  s.on('kicked', msg => { ON.code=null; ON.state=null; store.set('ci-room', null); showChat(false); onlineMenu(msg); });
+  return s;
+}
+function paintConn(){
+  const el = $('#conn'); if(!el) return;
+  el.textContent = ON.socket?.connected ? '' : 'Conectando ao servidor…';
+}
+
+function onlineMenu(msg=''){
+  const s = connect();
+  showChat(false);
+  tag('Online');
+  if(!s){
+    render(`<section><h1>Jogar online</h1><p class="err">Não consegui falar com o servidor do jogo. O modo online só funciona quando o site está publicado com o servidor (veja o passo a passo do projeto).</p></section>`, 'menu-off');
+    return;
+  }
+  const pre = (location.hash.match(/^#([A-Za-z]{4})$/)||[])[1] || '';
+  let isPublic = true;
+  render(`<section>
+    <h1>Jogar online</h1>
+    ${msg?`<p class="err">${esc(msg)}</p>`:''}
+    <div class="conn" id="conn"></div>
+    <label class="lbl">Seu apelido<input type="text" id="nick" maxlength="16" placeholder="Como vão te chamar" value="${esc(nick)}" autocomplete="nickname"></label>
+    <div class="box">
+      <h2>Entrar com código</h2>
+      <form class="inline" id="joinForm"><input type="text" class="code" id="joinCode" maxlength="4" placeholder="ABCD" value="${esc(pre)}" autocomplete="off" autocapitalize="characters"><button class="ghost" type="submit">Entrar</button></form>
+    </div>
+    <div class="box">
+      <div class="row"><h2>Salas abertas</h2><span class="hint" id="roomCount"></span></div>
+      <div class="roomlist" id="roomList"><div class="empty">Procurando salas…</div></div>
+    </div>
+    <div class="box">
+      <h2>Criar sala</h2>
+      <input type="text" id="roomName" maxlength="28" placeholder="Nome da sala (opcional)">
+      <div class="seg" role="group" aria-label="Tipo de sala"><button type="button" id="tPub" aria-pressed="true">Aberta</button><button type="button" id="tPriv" aria-pressed="false">Privada</button></div>
+      <p class="hint" id="tHint">Aparece na lista de salas abertas. Qualquer um pode entrar.</p>
+      <button class="btn" id="create">Criar sala</button>
+    </div>
+    <p class="err" id="menuErr"></p>
+  </section>`, 'menu');
+  paintConn(); paintRoomList();
+  s.emit('watch-rooms', true);
+  const setT = pub => { isPublic=pub; $('#tPub').setAttribute('aria-pressed',pub); $('#tPriv').setAttribute('aria-pressed',!pub);
+    $('#tHint').textContent = pub ? 'Aparece na lista de salas abertas. Qualquer um pode entrar.' : 'Não aparece na lista. Só entra quem tiver o código.'; };
+  $('#tPub').onclick=()=>setT(true); $('#tPriv').onclick=()=>setT(false);
+  $('#create').onclick = () => {
+    if(!checkNick()) return;
+    s.emit('create', { nick, token, roomName: $('#roomName').value, isPublic }, onJoined);
+  };
+  $('#joinForm').onsubmit = e => { e.preventDefault(); joinRoom($('#joinCode').value); };
+  if(pre && nick) joinRoom(pre);
+}
+function checkNick(){
+  const v = ($('#nick')?.value || '').trim().slice(0,16);
+  if(!v){ $('#menuErr').textContent='Escolha um apelido primeiro.'; $('#nick').focus(); return false; }
+  nick = v; store.set('ci-nick', nick); return true;
+}
+function joinRoom(code){
+  code = String(code||'').trim().toUpperCase();
+  if(!checkNick()) return;
+  if(!/^[A-Z]{4}$/.test(code)){ $('#menuErr').textContent='O código tem 4 letras.'; return; }
+  ON.socket.emit('join', { code, nick, token }, onJoined);
+}
+function onJoined(res){
+  if(res?.error){ const e=$('#menuErr'); if(e) e.textContent=res.error; return; }
+  ON.socket.emit('watch-rooms', false);
+  ON.code = res.code; ON.step=null; ON.stepRound=-1;
+  store.set('ci-room', { code: res.code, at: Date.now() });
+  try{ history.replaceState(history.state, '', '#'+res.code); }catch(e){}
+  resetChat(res.chat);
+}
+function paintRoomList(){
+  const el = $('#roomList'); if(!el) return;
+  const L = ON.list || [];
+  $('#roomCount').textContent = L.length ? `${L.length} ${L.length>1?'salas':'sala'}` : '';
+  if(!L.length){ el.innerHTML = `<div class="empty">Nenhuma sala aberta agora. Crie uma!</div>`; return; }
+  el.innerHTML = L.map(r=>`<button class="roomitem" data-code="${esc(r.code)}" ${r.players>=r.max?'disabled':''}>
+    <span class="rn">${esc(r.name)}</span>
+    <span class="rs">${r.players}/${r.max} · ${r.phase==='lobby'?'esperando':'jogando'}</span>
+    <span class="go">Entrar</span></button>`).join('');
+  el.querySelectorAll('[data-code]').forEach(b=>b.onclick=()=>joinRoom(b.dataset.code));
+}
+function onlineLeave(silent){
+  if(ON.socket && ON.code) ON.socket.emit('leave');
+  ON.code=null; ON.state=null; store.set('ci-room', null);
+  try{ history.replaceState(history.state, '', location.pathname); }catch(e){}
+  showChat(false);
+  if(!silent) onlineMenu();
+}
+
+/* ---- chat ---- */
+function showChat(on){ $('#chatBox').hidden = !on; }
+function resetChat(list){ $('#chatLog').innerHTML=''; (list||[]).forEach(addChat); }
+function addChat(m){
+  const log=$('#chatLog'); const d=document.createElement('div');
+  if(m.sys){ d.className='m sys'; d.textContent=m.text; }
+  else { d.className='m'+(ON.state && m.pid===ON.state.me?' me':''); const b=document.createElement('b'); b.textContent=m.name; d.append(b, document.createTextNode(m.text)); }
+  log.append(d); while(log.children.length>80) log.firstChild.remove();
+  log.scrollTop = log.scrollHeight;
+}
+$('#chatForm').onsubmit = e => { e.preventDefault(); const v=$('#chatInput').value.trim(); if(v && ON.socket){ ON.socket.emit('chat', v); $('#chatInput').value=''; } };
+
+/* ---- countdown ---- */
+function tickCountdown(){ $$('[data-cd]').forEach(el=>{ if(!ON.deadlineAt) return; const s=Math.max(0,Math.ceil((ON.deadlineAt-Date.now())/1000)); el.textContent = `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; }); }
+setInterval(tickCountdown, 250);
+
+/* ---- room screens ---- */
+function renderRoom(){
+  const st = ON.state; if(!st) return;
+  const me = st.players.find(p=>p.pid===st.me);
+  if(st.phase==='lobby') return roomLobby(st);
+  if(st.phase==='timing'){
+    showChat(false);
+    tag(`Rodada ${st.round}`);
+    if(!st.role) return roomSpectate(st);
+    if(st.myTime!=null) return roomWait(st);
+    if(ON.stepRound!==st.round){ ON.stepRound=st.round; ON.step='role'; return roomRole(st); }
+    if(ON.step==='role' && screenName!=='o-role') return roomRole(st);
+    if(ON.step==='watch' && screenName!=='o-watch') return roomWatch(st);
+    return; // don't disturb a running stopwatch
+  }
+  if(st.phase==='voting') return roomVote(st);
+  if(st.phase==='reveal') return roomReveal(st);
+}
+function playerRows(st, extra){
+  return st.players.map(p=>{
+    const you = p.pid===st.me;
+    return `<li class="${p.connected?'':'off'}"><span class="name">${p.host?'👑 ':''}${esc(p.name)}${you?' <span class="badge">(você)</span>':''}</span>
+      ${extra?extra(p):''}
+      ${st.isHost && !you && st.phase==='lobby'?`<button class="x" data-kick="${esc(p.pid)}" aria-label="Tirar ${esc(p.name)} da sala">×</button>`:''}</li>`;
+  }).join('');
+}
+function roomLobby(st){
+  showChat(true); tag('Sala');
+  const n = st.players.filter(p=>p.connected).length;
+  const S = st.settings, H = st.isHost;
+  const link = `${location.origin}${location.pathname}#${st.code}`;
+  render(`<section>
+    <div class="panel">
+      <div class="plabel">código da sala</div>
+      <div class="bigcode">${esc(st.code)}</div>
+      <div class="row" style="justify-content:center"><span class="pill ${st.isPublic?'pub':'priv'}">${st.isPublic?'Aberta':'Privada'}</span><span class="plabel">${esc(st.name)}</span></div>
+    </div>
+    <div class="inline"><input type="text" id="lnk" readonly value="${esc(link)}" aria-label="Link da sala"><button class="ghost" id="copy">Copiar link</button></div>
+    <div class="box">
+      <div class="row"><h2>Jogadores (${n}/12)</h2>${st.round?`<span class="hint">placar ao lado</span>`:''}</div>
+      <ul class="players">${playerRows(st, p=>st.round?`<span class="badge">${p.score} pts</span>`:'')}</ul>
+    </div>
+    <div class="box">
+      ${H?`<div class="seg" role="group" aria-label="Tipo de sala"><button id="sPub" aria-pressed="${st.isPublic}">Aberta</button><button id="sPriv" aria-pressed="${!st.isPublic}">Privada</button></div>`:''}
+      <div class="row"><span>Impostores</span><div class="step">${H?`<button data-st="impostors:-1" aria-label="Menos">−</button>`:''}<output>${S.impostors}</output>${H?`<button data-st="impostors:1" aria-label="Mais">+</button>`:''}</div></div>
+      <div class="row"><span>Tempo mínimo</span><div class="step">${H?`<button data-st="minT:-1" aria-label="Menos">−</button>`:''}<output>${S.minT}s</output>${H?`<button data-st="minT:1" aria-label="Mais">+</button>`:''}</div></div>
+      <div class="row"><span>Tempo máximo</span><div class="step">${H?`<button data-st="maxT:-1" aria-label="Menos">−</button>`:''}<output>${S.maxT}s</output>${H?`<button data-st="maxT:1" aria-label="Mais">+</button>`:''}</div></div>
+      ${showTimeRow(!!S.showTime, !H)}
+    </div>
+    ${H ? `<button class="btn" id="start" ${n<3?'disabled':''}>${n<3?`Esperando jogadores (mín. 3)`:'Começar rodada'}</button><p class="err" id="startErr"></p>`
+        : `<p class="center">Esperando o anfitrião começar…</p>`}
+    <button class="ghost" id="leave">Sair da sala</button>
+  </section>`, 'o-lobby');
+  $('#copy').onclick = async () => { try{ await navigator.clipboard.writeText(link); $('#copy').textContent='Copiado!'; }catch(e){ $('#lnk').select(); } };
+  $('#leave').onclick = () => onlineLeave(false);
+  $$('[data-kick]').forEach(b=>b.onclick=()=>ON.socket.emit('kick', b.dataset.kick));
+  if(H){
+    $('#sPub').onclick=()=>ON.socket.emit('settings',{isPublic:true});
+    $('#sPriv').onclick=()=>ON.socket.emit('settings',{isPublic:false});
+    bindShow(v=>ON.socket.emit('settings',{showTime:v}));
+    $$('[data-st]').forEach(b=>b.onclick=()=>{ const [k,d]=b.dataset.st.split(':'); ON.socket.emit('settings', {[k]: S[k] + +d}); });
+    $('#start').onclick = () => ON.socket.emit('start', null, r => { if(r?.error) $('#startErr').textContent=r.error; });
+  }
+}
+function roomRole(st){
+  const r = st.role;
+  render(`<section>
+    ${r.impostor
+      ? `<div class="panel">${led('--.--','red')}<div class="plabel">sem tempo pra você</div></div><div class="role imp">Você é o IMPOSTOR</div>
+         <p class="center">${r.impCount>1?`Tem ${r.impCount} impostores nesta rodada. `:''}Você não sabe o tempo. Chute algo que pareça normal. Se ficar muito longe dos outros, vão te descobrir.</p>`
+      : `<div class="panel">${led(ledTime(r.target))}<div class="plabel">seu tempo-alvo · segundos</div></div>
+         <p class="center">Decore o tempo. Depois o visor apaga e você para o cronômetro de cabeça.</p>`}
+    <button class="btn" id="ready">Entendi, ir pro cronômetro</button>
+    <p class="center hint">Tempo limite da rodada: <span class="cd" data-cd></span></p>
+  </section>`, 'o-role');
+  $('#ready').onclick = () => { ON.step='watch'; roomWatch(st); };
+}
+function roomWatch(st){
+  const show = !!st.settings.showTime;
+  const sw = stopwatch({ pre: led('00.00'), label:'quando quiser, aperte', show, onStop: ms => {
+    ON.socket.emit('time', ms);
+    if(!show) $('#panel').innerHTML = led('--.--') + `<div class="plabel">enviado</div>`;
+  }});
+  render(`<section>${sw.html}<p class="center hint">Tempo limite: <span class="cd" data-cd></span></p></section>`, 'o-watch');
+  sw.bind();
+}
+function roomWait(st){
+  const ps = st.players.filter(p=>p.inRound);
+  const done = ps.filter(p=>p.done).length;
+  render(`<section>
+    <div class="panel">${led('--.--')}<div class="plabel">seu tempo foi enviado</div></div>
+    <h1>Esperando os outros</h1>
+    <p>${done} de ${ps.length} já pararam o cronômetro. Limite: <span class="cd" data-cd></span></p>
+    <div class="box"><ul class="players">${playerRows(st, p=>p.inRound?`<span class="badge ${p.done?'ok':''}">${p.done?'pronto':'jogando…'}</span>`:`<span class="badge">próxima</span>`)}</ul></div>
+  </section>`, 'o-wait');
+}
+function roomSpectate(st){
+  render(`<section>
+    <div class="panel">${led('--.--','blink')}<div class="plabel">rodada em andamento</div></div>
+    <h1>Você entra na próxima rodada</h1>
+    <p>Essa rodada começou antes de você chegar. Assim que acabar, o anfitrião começa outra e você joga.</p>
+  </section>`, 'o-spec');
+}
+function roomVote(st){
+  showChat(true); tag(`Rodada ${st.round} · votação`);
+  const ps = st.players.filter(p=>p.inRound);
+  const voted = ps.filter(p=>p.voted).length;
+  const rows = ps.map(p=>({ name:p.name, ms: st.times?.[p.pid] ?? null })).sort((a,b)=>(a.ms??1e9)-(b.ms??1e9));
+  const can = !!st.role && st.myVote==null;
+  const votedName = st.myVote==='skip' ? 'ninguém (pulou)' : esc(st.players.find(p=>p.pid===st.myVote)?.name || '');
+  render(`<section>
+    <h1>Quem é o impostor?</h1>
+    <div class="box"><div class="row"><h2>Tempos de todo mundo</h2><span class="cd" data-cd></span></div>${bars(rows,null)}</div>
+    <p>Conversem aqui embaixo e votem. Quem tiver mais votos é eliminado. Empate ou ninguém eliminado: o impostor vence.</p>
+    ${st.role ? `<div class="vote">${ps.filter(p=>p.pid!==st.me).map(p=>`<button data-v="${esc(p.pid)}" aria-pressed="${st.myVote===p.pid}" ${can?'':'disabled'}>${esc(p.name)}</button>`).join('')}
+      <button class="skip" data-v="skip" aria-pressed="${st.myVote==='skip'}" ${can?'':'disabled'}>Pular voto</button></div>` : `<p class="center">Você está assistindo esta rodada.</p>`}
+    <p class="center hint">${st.myVote!=null?`Você votou em ${votedName}. `:''}${voted} de ${ps.length} votaram.</p>
+  </section>`, 'o-vote');
+  $$('[data-v]').forEach(b=>b.onclick=()=>{ if(can) ON.socket.emit('vote', b.dataset.v); });
+}
+function roomReveal(st){
+  showChat(true); tag(`Rodada ${st.round} · resultado`);
+  const R = st.reveal; const byPid = Object.fromEntries(st.players.map(p=>[p.pid,p]));
+  const nm = pid => byPid[pid]?.name || 'alguém que saiu';
+  const imps = R.impostors.map(pid=>`<strong style="color:var(--imp)">${esc(nm(pid))}</strong>`).join(' e ');
+  const elimTxt = R.eliminated ? `${esc(nm(R.eliminated))} foi eliminado.` : R.tie ? 'Deu empate, ninguém foi eliminado.' : 'Ninguém foi eliminado.';
+  const ps = st.players.filter(p=>p.inRound || st.times?.[p.pid]!=null);
+  const rows = ps.map(p=>({ name:p.name, ms: st.times?.[p.pid] ?? null, cls: R.impostors.includes(p.pid)?'imp':'crew' })).sort((a,b)=>(a.ms??1e9)-(b.ms??1e9));
+  const tally = Object.entries(R.tally).sort((a,b)=>b[1]-a[1]).map(([pid,c])=>`${esc(nm(pid))}: ${c}`).join(' · ');
+  render(`<section>
+    <div class="verdict" style="color:var(${R.caught?'--crew':'--imp'})">${R.caught?'Impostor eliminado! Tripulação vence.':'O impostor venceu!'}</div>
+    <p class="center">${elimTxt} ${R.impostors.length>1?'Os impostores eram':'O impostor era'} ${imps}.</p>
+    <div class="panel">${led(ledTime(R.target))}<div class="plabel">tempo-alvo</div></div>
+    <div class="box">${bars(rows, R.target)}
+      ${R.best?`<p class="hint">Mais perto do alvo: <strong style="color:var(--fg)">${esc(nm(R.best))}</strong> (${fmt(R.bestDiff)} de diferença) · +1</p>`:''}
+      ${tally?`<p class="hint">Votos: ${tally}</p>`:''}</div>
+    <div class="box"><h2>Placar</h2><ul class="score">${[...st.players].sort((a,b)=>b.score-a.score).map(p=>`<li><span>${esc(p.name)}${p.pid===st.me?' (você)':''}</span><span>${p.score}</span></li>`).join('')}</ul></div>
+    ${st.isHost ? `<button class="btn" id="again">Próxima rodada</button><p class="err" id="startErr"></p><button class="ghost" id="lobby">Voltar pro lobby</button>`
+                : `<p class="center">Esperando o anfitrião começar a próxima…</p>`}
+    <button class="ghost" id="leave">Sair da sala</button>
+  </section>`, 'o-reveal');
+  $('#leave').onclick = () => onlineLeave(false);
+  if(st.isHost){
+    $('#again').onclick = () => ON.socket.emit('start', null, r => { if(r?.error) $('#startErr').textContent=r.error; });
+    $('#lobby').onclick = () => ON.socket.emit('lobby');
+  }
+}
+
+/* =====================================================================
+   MESMO CELULAR
+   ===================================================================== */
+const S = Object.assign({ players:['Ana','Bruno','Carla','Diego','Leo'], impostors:1, minT:3, maxT:15, scores:{}, round:0 }, store.get('ci-config', {}) || {});
+S.scores = S.scores || {};
+const persist = () => store.set('ci-config', S);
+let G = null;
+
+function localSetup(){
+  tag('Mesmo celular');
+  const maxImp = Math.max(1, Math.floor((S.players.length-1)/2));
+  S.impostors = Math.min(S.impostors, maxImp);
+  render(`<section>
+    <h1>Todo mundo sabe o tempo. Menos o impostor.</h1>
+    <div class="box">
+      <h2>Jogadores (${S.players.length})</h2>
+      <ul class="players">${S.players.map((p,i)=>`<li><span class="n">${String(i+1).padStart(2,'0')}</span><span class="name">${esc(p)}</span><button class="x" aria-label="Remover ${esc(p)}" data-rm="${i}">×</button></li>`).join('')}</ul>
+      <form class="add" id="addForm"><input type="text" id="newName" placeholder="Nome do jogador" maxlength="18" autocomplete="off"><button class="ghost" type="submit">Adicionar</button></form>
+    </div>
+    <div class="box">
+      <div class="row"><span>Impostores</span><div class="step"><button data-st="impostors:-1" aria-label="Menos">−</button><output>${S.impostors}</output><button data-st="impostors:1" aria-label="Mais">+</button></div></div>
+      <div class="row"><span>Tempo mínimo</span><div class="step"><button data-st="minT:-1" aria-label="Menos">−</button><output>${S.minT}s</output><button data-st="minT:1" aria-label="Mais">+</button></div></div>
+      <div class="row"><span>Tempo máximo</span><div class="step"><button data-st="maxT:-1" aria-label="Menos">−</button><output>${S.maxT}s</output><button data-st="maxT:1" aria-label="Mais">+</button></div></div>
+      <p class="hint">O tempo secreto é sorteado entre ${S.minT} e ${S.maxT} segundos.</p>
+      ${showTimeRow(!!S.showTime, false)}
+    </div>
+    <button class="btn" id="start" ${S.players.length<3?'disabled':''}>${S.players.length<3?'Precisa de 3 jogadores':'Começar rodada'}</button>
+    ${Object.keys(S.scores).length?`<button class="ghost" id="reset">Zerar placar</button>`:''}
+  </section>`, 'l-setup');
+  $('#addForm').onsubmit = e => { e.preventDefault(); const v=$('#newName').value.trim(); if(v && !S.players.includes(v)){S.players.push(v);persist();localSetup();$('#newName').focus();} };
+  $$('[data-rm]').forEach(b=>b.onclick=()=>{S.players.splice(+b.dataset.rm,1);persist();localSetup();});
+  $$('[data-st]').forEach(b=>b.onclick=()=>{
+    const [k,d]=b.dataset.st.split(':'); S[k]+= +d;
+    S.impostors=Math.max(1,Math.min(S.impostors,maxImp));
+    S.minT=Math.max(1,Math.min(S.minT,S.maxT-1)); S.maxT=Math.max(S.minT+1,Math.min(S.maxT,60));
+    persist(); localSetup();
+  });
+  bindShow(v=>{ S.showTime=v; persist(); localSetup(); });
+  $('#start').onclick = localStart;
+  const r=$('#reset'); if(r) r.onclick=()=>{S.scores={};S.round=0;persist();localSetup();};
+}
+function localStart(){
+  S.round++; persist();
+  G = { target: randTarget(S.minT,S.maxT), order: shuffle([...S.players]), imps:new Set(shuffle([...S.players]).slice(0,S.impostors)), times:{}, idx:0, vote:null };
+  localPass();
+}
+function localPass(){
+  tag(`Rodada ${S.round} · ${G.idx+1}/${G.order.length}`);
+  const p = G.order[G.idx];
+  render(`<section class="center">
+    <h2>Passe o celular para</h2>
+    <div class="who">${esc(p)}</div>
+    <p>Ninguém mais pode olhar a tela.</p>
+    <button class="btn" id="go">Sou ${esc(p)}, mostrar meu tempo</button>
+  </section>`, 'l-pass');
+  $('#go').onclick = localSecret;
+}
+function localSecret(){
+  const p = G.order[G.idx], imp = G.imps.has(p);
+  render(`<section>
+    ${imp
+      ? `<div class="panel">${led('--.--','red')}<div class="plabel">sem tempo pra você</div></div><div class="role imp">Você é o IMPOSTOR</div>
+         <p class="center">Você não sabe o tempo. Chute algo que pareça normal. Se ficar muito longe dos outros, vão te descobrir.</p>`
+      : `<div class="panel">${led(ledTime(G.target))}<div class="plabel">seu tempo-alvo · segundos</div></div>
+         <p class="center">Decore o tempo. Depois o visor apaga e você para o cronômetro de cabeça.</p>`}
+    <button class="btn" id="ready">Entendi, esconder</button>
+  </section>`, 'l-secret');
+  $('#ready').onclick = localTimer;
+}
+function localTimer(){
+  const p = G.order[G.idx];
+  const show = !!S.showTime;
+  const sw = stopwatch({ pre: led('00.00'), label: `vez de ${esc(p)}`, show, onStop: ms => {
+    G.times[p]=ms; G.idx++;
+    if(!show) $('#panel').innerHTML = led('--.--') + `<div class="plabel">registrado</div>`;
+    setTimeout(()=> G.idx<G.order.length ? localPass() : localResults(), show?1500:900);
+  }});
+  render(`<section>${sw.html}</section>`, 'l-timer');
+  sw.bind();
+}
+function localBars(showTarget){
+  const rows = S.players.filter(p=>p in G.times).sort((a,b)=>G.times[a]-G.times[b])
+    .map(p=>({ name:p, ms:G.times[p], cls: showTarget ? (G.imps.has(p)?'imp':'crew') : '' }));
+  return bars(rows, showTarget ? G.target : null);
+}
+function localResults(){
+  tag(`Rodada ${S.round} · votação`);
+  render(`<section>
+    <h1>Quem é o impostor?</h1>
+    <div class="box"><h2>Tempos de todo mundo</h2>${localBars(false)}</div>
+    <p>Discutam quem ficou longe demais e votem. Quem tiver mais votos é eliminado. Se não for o impostor, o impostor ganha.</p>
+    <div class="vote">${S.players.map(p=>`<button data-v="${esc(p)}" aria-pressed="${G.vote===p}">${esc(p)}</button>`).join('')}</div>
+    <button class="btn red" id="reveal" ${G.vote?'':'disabled'}>${G.vote?'Eliminar '+esc(G.vote):'Escolha quem eliminar'}</button>
+  </section>`, 'l-vote');
+  $$('[data-v]').forEach(b=>b.onclick=()=>{G.vote=b.dataset.v;localResults();});
+  $('#reveal').onclick = localReveal;
+}
+function localReveal(){
+  tag(`Rodada ${S.round} · resultado`);
+  const caught = G.imps.has(G.vote);
+  const add=(p,n)=>S.scores[p]=(S.scores[p]||0)+n;
+  S.players.forEach(p=>S.scores[p]=S.scores[p]||0);
+  if(caught) S.players.filter(p=>!G.imps.has(p)).forEach(p=>add(p,1));
+  else G.imps.forEach(p=>add(p,3));
+  const crew = S.players.filter(p=>!G.imps.has(p));
+  const best = crew.reduce((a,b)=>Math.abs(G.times[b]-G.target)<Math.abs(G.times[a]-G.target)?b:a);
+  add(best,1); persist();
+  const imps=[...G.imps].map(esc).join(' e ');
+  render(`<section>
+    <div class="verdict" style="color:var(${caught?'--crew':'--imp'})">${caught?'Impostor eliminado! Tripulação vence.':'O impostor venceu!'}</div>
+    <p class="center">Vocês eliminaram ${esc(G.vote)}. ${G.imps.size>1?'Os impostores eram':'O impostor era'} <strong style="color:var(--imp)">${imps}</strong>.</p>
+    <div class="panel">${led(ledTime(G.target))}<div class="plabel">tempo-alvo</div></div>
+    <div class="box">${localBars(true)}
+      <p class="hint">Mais perto do alvo: <strong style="color:var(--fg)">${esc(best)}</strong> (${fmt(Math.abs(G.times[best]-G.target))} de diferença) · +1</p></div>
+    <div class="box"><h2>Placar</h2><ul class="score">${[...S.players].sort((a,b)=>S.scores[b]-S.scores[a]).map(p=>`<li><span>${esc(p)}</span><span>${S.scores[p]}</span></li>`).join('')}</ul></div>
+    <button class="btn" id="again">Próxima rodada</button>
+    <button class="ghost" id="edit">Mudar jogadores</button>
+  </section>`, 'l-reveal');
+  $('#again').onclick=localStart; $('#edit').onclick=localSetup;
+}
+
+/* =====================================================================
+   IMPOSTOR DA PALAVRA (mesmo celular)
+   ===================================================================== */
+const WORDS = {
+  'Animais': ['Cachorro','Gato','Elefante','Girafa','Leão','Tubarão','Pinguim','Macaco','Cavalo','Coruja','Tartaruga','Cobra','Abelha','Vaca','Golfinho','Jacaré'],
+  'Comidas': ['Pizza','Hambúrguer','Brigadeiro','Feijoada','Pipoca','Sorvete','Coxinha','Pastel','Lasanha','Açaí','Pão de queijo','Chocolate','Macarrão','Churrasco','Bolo','Banana'],
+  'Lugares': ['Praia','Escola','Hospital','Shopping','Cinema','Aeroporto','Igreja','Academia','Fazenda','Padaria','Estádio','Biblioteca','Supermercado','Parque','Zoológico','Restaurante'],
+  'Objetos': ['Celular','Guarda-chuva','Escova de dente','Travesseiro','Relógio','Óculos','Mochila','Tesoura','Geladeira','Controle remoto','Vela','Espelho','Chave','Fone de ouvido','Lápis','Copo'],
+  'Profissões': ['Médico','Professor','Bombeiro','Policial','Cozinheiro','Piloto','Dentista','Jogador de futebol','Cantor','Mecânico','Astronauta','Veterinário','Youtuber','Motorista','Padeiro','Pintor'],
+  'Esportes': ['Futebol','Basquete','Vôlei','Natação','Skate','Surfe','Tênis','Boxe','Corrida','Ciclismo','Judô','Xadrez','Handebol','Ginástica','Pingue-pongue','Golfe'],
+  'Transportes': ['Avião','Ônibus','Bicicleta','Moto','Navio','Trem','Helicóptero','Metrô','Patinete','Foguete','Caminhão','Táxi','Barco','Submarino','Carro','Balão'],
+  'Natureza': ['Chuva','Vulcão','Floresta','Arco-íris','Montanha','Rio','Neve','Deserto','Sol','Lua','Cachoeira','Trovão','Flor','Árvore','Estrela','Vento'],
+  'Diversão': ['Videogame','Futebol de botão','Montanha-russa','Karaokê','Festa de aniversário','Esconde-esconde','Quebra-cabeça','Pipa','Circo','Piscina','Churrasco de família','Show','Cartas','Dominó','Acampamento','Fogos de artifício'],
+};
+const W = Object.assign({ impostors:1, hint:true, rounds:3, cats:Object.keys(WORDS), scores:{}, round:0 }, store.get('ci-word', {}) || {});
+W.cats = (W.cats||[]).filter(c=>WORDS[c]); if(!W.cats.length) W.cats = Object.keys(WORDS);
+W.scores = W.scores || {};
+const wPersist = () => store.set('ci-word', W);
+let WG = null;
+
+function wordSetup(){
+  tag('Palavra');
+  const maxImp = Math.max(1, Math.floor((S.players.length-1)/2));
+  W.impostors = Math.min(W.impostors, maxImp);
+  render(`<section>
+    <h1>Todo mundo sabe a palavra. Menos o impostor.</h1>
+    <div class="box">
+      <h2>Jogadores (${S.players.length})</h2>
+      <ul class="players">${S.players.map((p,i)=>`<li><span class="n">${String(i+1).padStart(2,'0')}</span><span class="name">${esc(p)}</span><button class="x" aria-label="Remover ${esc(p)}" data-rm="${i}">×</button></li>`).join('')}</ul>
+      <form class="add" id="addForm"><input type="text" id="newName" placeholder="Nome do jogador" maxlength="18" autocomplete="off"><button class="ghost" type="submit">Adicionar</button></form>
+    </div>
+    <div class="box">
+      <div class="row"><span>Impostores</span><div class="step"><button data-st="impostors:-1" aria-label="Menos">−</button><output>${W.impostors}</output><button data-st="impostors:1" aria-label="Mais">+</button></div></div>
+      <div class="row"><span>Rodadas de dicas</span><div class="step"><button data-st="rounds:-1" aria-label="Menos">−</button><output>${W.rounds}</output><button data-st="rounds:1" aria-label="Mais">+</button></div></div>
+      <div class="row"><span>Impostor recebe dica</span><div class="seg" role="group" aria-label="Impostor recebe dica" style="min-width:150px"><button type="button" data-hint="0" aria-pressed="${!W.hint}">Não</button><button type="button" data-hint="1" aria-pressed="${W.hint}">Sim</button></div></div>
+      <p class="hint">${W.hint?'O impostor fica sabendo o tema da palavra (por exemplo, "Animais"). Fica mais fácil disfarçar.':'O impostor não sabe nada. Tem que adivinhar pelas dicas dos outros.'}</p>
+    </div>
+    <div class="box">
+      <div class="row"><h2>Temas das palavras</h2><button class="chip" id="allCats" type="button">${W.cats.length===Object.keys(WORDS).length?'Tirar todos':'Marcar todos'}</button></div>
+      <div class="chips">${Object.keys(WORDS).map(c=>`<button type="button" class="chip" data-cat="${esc(c)}" aria-pressed="${W.cats.includes(c)}">${esc(c)}</button>`).join('')}</div>
+    </div>
+    <button class="btn" id="start" ${S.players.length<3||!W.cats.length?'disabled':''}>${S.players.length<3?'Precisa de 3 jogadores':!W.cats.length?'Escolha pelo menos um tema':'Começar rodada'}</button>
+    <details class="box rules"><summary>Como jogar</summary><ol>
+      <li>Passe o celular. Cada um vê a palavra secreta. O impostor vê que é o impostor${W.hint?' e o tema':''}.</li>
+      <li>Em cada rodada, cada um fala uma palavra que tenha a ver com a secreta. Ex.: palavra "Cachorro", dica "ração".</li>
+      <li>O impostor tem que inventar uma dica que não entregue ele.</li>
+      <li>Depois de ${W.rounds} ${W.rounds>1?'rodadas':'rodada'}, votem pra eliminar alguém. Eliminaram o impostor: tripulação vence. Senão, o impostor vence.</li>
+    </ol></details>
+    ${Object.keys(W.scores).length?`<button class="ghost" id="reset">Zerar placar</button>`:''}
+  </section>`, 'w-setup');
+  $('#addForm').onsubmit = e => { e.preventDefault(); const v=$('#newName').value.trim(); if(v && !S.players.includes(v)){S.players.push(v);persist();wordSetup();$('#newName').focus();} };
+  $$('[data-rm]').forEach(b=>b.onclick=()=>{S.players.splice(+b.dataset.rm,1);persist();wordSetup();});
+  $$('[data-st]').forEach(b=>b.onclick=()=>{
+    const [k,d]=b.dataset.st.split(':'); W[k]+= +d;
+    W.impostors=Math.max(1,Math.min(W.impostors,maxImp)); W.rounds=Math.max(1,Math.min(5,W.rounds));
+    wPersist(); wordSetup();
+  });
+  $$('[data-hint]').forEach(b=>b.onclick=()=>{ W.hint = b.dataset.hint==='1'; wPersist(); wordSetup(); });
+  $$('[data-cat]').forEach(b=>b.onclick=()=>{ const c=b.dataset.cat; W.cats = W.cats.includes(c) ? W.cats.filter(x=>x!==c) : [...W.cats, c]; wPersist(); wordSetup(); });
+  $('#allCats').onclick = () => { W.cats = W.cats.length===Object.keys(WORDS).length ? [] : Object.keys(WORDS); wPersist(); wordSetup(); };
+  $('#start').onclick = wordStart;
+  const r=$('#reset'); if(r) r.onclick=()=>{W.scores={};W.round=0;wPersist();wordSetup();};
+}
+function wordStart(){
+  W.round++; wPersist();
+  const cat = W.cats[Math.floor(Math.random()*W.cats.length)];
+  const list = WORDS[cat];
+  let word = list[Math.floor(Math.random()*list.length)];
+  if(WG && WG.word===word && list.length>1) word = list[(list.indexOf(word)+1)%list.length];
+  const order = shuffle([...S.players]);
+  WG = { cat, word, imps:new Set(shuffle([...S.players]).slice(0,W.impostors)), order, idx:0,
+         talk: shuffle([...S.players]), cr:1, turn:0, clues:Object.fromEntries(S.players.map(p=>[p,[]])), vote:null };
+  wordPass();
+}
+function wordPass(){
+  tag(`Palavra · ${WG.idx+1}/${WG.order.length}`);
+  const p = WG.order[WG.idx];
+  render(`<section class="center">
+    <h2>Passe o celular para</h2>
+    <div class="who">${esc(p)}</div>
+    <p>Ninguém mais pode olhar a tela.</p>
+    <button class="btn" id="go">Sou ${esc(p)}, mostrar minha palavra</button>
+  </section>`, 'w-pass');
+  $('#go').onclick = wordSecret;
+}
+function wordSecret(){
+  const p = WG.order[WG.idx], imp = WG.imps.has(p);
+  render(`<section>
+    <div class="panel" style="padding-block:28px">
+      <div class="plabel">${imp?'você é o':'a palavra secreta é'}</div>
+      <div class="secret ${imp?'imp':''}">${imp?'IMPOSTOR':esc(WG.word)}</div>
+      ${imp && W.hint ? `<div class="plabel">dica · tema: ${esc(WG.cat)}</div>` : ''}
+    </div>
+    <p class="center">${imp
+      ? (W.hint ? `Você não sabe a palavra, só que o tema é <strong style="color:var(--fg)">${esc(WG.cat)}</strong>. Preste atenção nas dicas dos outros e invente uma que combine.`
+                : 'Você não sabe a palavra nem o tema. Preste atenção nas dicas dos outros e tente se misturar.')
+      : 'Decore a palavra. Nas dicas, fale algo que tenha a ver, mas sem entregar fácil demais pro impostor.'}</p>
+    <button class="btn" id="ready">Entendi, esconder</button>
+  </section>`, 'w-secret');
+  $('#ready').onclick = () => { WG.idx++; WG.idx < WG.order.length ? wordPass() : wordClues(); };
+}
+function clueTable(highlight, showImp){
+  const n = W.rounds;
+  return `<div class="cluewrap"><table class="cluetab"><thead><tr><th>Jogador</th>${Array.from({length:n},(_,i)=>`<th>Rodada ${i+1}</th>`).join('')}</tr></thead><tbody>
+    ${WG.talk.map(p=>`<tr class="${p===highlight?'now':''} ${showImp&&WG.imps.has(p)?'imp':''}"><td>${esc(p)}</td>${Array.from({length:n},(_,i)=>`<td>${WG.clues[p][i]!=null?(esc(WG.clues[p][i])||'·'):''}</td>`).join('')}</tr>`).join('')}
+  </tbody></table></div>`;
+}
+function wordClues(){
+  const p = WG.talk[WG.turn];
+  tag(`Dicas · rodada ${WG.cr}/${W.rounds}`);
+  render(`<section>
+    <h2 class="center">Rodada ${WG.cr} de ${W.rounds} · ${WG.turn+1}º a falar</h2>
+    <div class="who">${esc(p)}</div>
+    <p class="center">Fale em voz alta <strong style="color:var(--fg)">uma palavra</strong> que tenha a ver com a palavra secreta.</p>
+    <form class="inline" id="clueForm"><input type="text" id="clue" maxlength="24" placeholder="Anotar a dica (opcional)" autocomplete="off"><button class="btn" type="submit" style="width:auto;padding-inline:20px">Próximo</button></form>
+    <div class="box"><h2>Dicas até agora</h2>${clueTable(p,false)}</div>
+    <button class="ghost" id="skipVote">Ir direto pra votação</button>
+  </section>`, 'w-clue');
+  $('#clueForm').onsubmit = e => {
+    e.preventDefault();
+    WG.clues[p][WG.cr-1] = $('#clue').value.trim();
+    WG.turn++;
+    if(WG.turn >= WG.talk.length){ WG.turn=0; WG.cr++; }
+    WG.cr > W.rounds ? wordVote() : wordClues();
+  };
+  $('#skipVote').onclick = wordVote;
+}
+function wordVote(){
+  tag(`Palavra · votação`);
+  render(`<section>
+    <h1>Quem é o impostor?</h1>
+    <div class="box"><h2>Dicas de todo mundo</h2>${clueTable(null,false)}</div>
+    <p>Conversem sobre quem deu as dicas mais estranhas e votem. Quem tiver mais votos é eliminado.</p>
+    <div class="vote">${S.players.map(p=>`<button data-v="${esc(p)}" aria-pressed="${WG.vote===p}">${esc(p)}</button>`).join('')}</div>
+    <button class="btn red" id="reveal" ${WG.vote?'':'disabled'}>${WG.vote?'Eliminar '+esc(WG.vote):'Escolha quem eliminar'}</button>
+  </section>`, 'w-vote');
+  $$('[data-v]').forEach(b=>b.onclick=()=>{ WG.vote=b.dataset.v; wordVote(); });
+  $('#reveal').onclick = wordReveal;
+}
+function wordReveal(){
+  tag('Palavra · resultado');
+  const caught = WG.imps.has(WG.vote);
+  const add=(p,n)=>W.scores[p]=(W.scores[p]||0)+n;
+  S.players.forEach(p=>W.scores[p]=W.scores[p]||0);
+  if(caught) S.players.filter(p=>!WG.imps.has(p)).forEach(p=>add(p,1));
+  else WG.imps.forEach(p=>add(p,3));
+  wPersist();
+  const imps=[...WG.imps].map(esc).join(' e ');
+  render(`<section>
+    <div class="verdict" style="color:var(${caught?'--crew':'--imp'})">${caught?'Impostor eliminado! Tripulação vence.':'O impostor venceu!'}</div>
+    <p class="center">Vocês eliminaram ${esc(WG.vote)}. ${WG.imps.size>1?'Os impostores eram':'O impostor era'} <strong style="color:var(--imp)">${imps}</strong>.</p>
+    <div class="panel" style="padding-block:24px"><div class="plabel">a palavra era</div><div class="secret">${esc(WG.word)}</div><div class="plabel">tema: ${esc(WG.cat)}</div></div>
+    <div class="box"><h2>Dicas</h2>${clueTable(null,true)}</div>
+    <div class="box"><h2>Placar</h2><ul class="score">${[...S.players].sort((a,b)=>(W.scores[b]||0)-(W.scores[a]||0)).map(p=>`<li><span>${esc(p)}</span><span>${W.scores[p]||0}</span></li>`).join('')}</ul></div>
+    <button class="btn" id="again">Próxima rodada</button>
+    <button class="ghost" id="edit">Mudar jogadores ou temas</button>
+  </section>`, 'w-reveal');
+  $('#again').onclick=wordStart; $('#edit').onclick=wordSetup;
+}
+
+/* =====================================================================
+   TREINO
+   ===================================================================== */
+let soloHist = store.get('ci-solo', []) || [];
+let soloTarget = 0;
+function solo(newTarget){
+  if(newTarget) soloTarget = randTarget(S.minT, S.maxT);
+  tag('Treino');
+  const show = !!S.soloShow;
+  const sw = stopwatch({ pre: led(ledTime(soloTarget)), label:'tempo-alvo · segundos', show, onStop: ms => setTimeout(()=>soloResult(ms), show?700:350) });
+  render(`<section>
+    ${sw.html}
+    <div class="box"><div class="row"><span>Tempo sorteado entre</span>
+      <div class="step"><button data-r="-1" aria-label="Diminuir">−</button><output>${S.minT}–${S.maxT}s</output><button data-r="1" aria-label="Aumentar">+</button></div></div>
+      ${showTimeRow(show, false)}</div>
+    ${statsHtml()}
+  </section>`, 'solo');
+  sw.bind();
+  bindShow(v=>{ S.soloShow=v; persist(); solo(false); });
+  $$('[data-r]').forEach(b=>b.onclick=()=>{ S.maxT=Math.max(S.minT+4,Math.min(60,S.maxT+(+b.dataset.r)*5)); persist(); solo(true); });
+}
+function soloResult(ms){
+  const err = ms - soloTarget, a = Math.abs(err)/1000;
+  soloHist.unshift({t:soloTarget, e:err}); soloHist = soloHist.slice(0,50); store.set('ci-solo', soloHist);
+  const [g,c] = a<0.1?['Perfeito!','--crew']:a<0.3?['Muito bom','--crew']:a<0.7?['Quase','--fg']:['Longe','--imp'];
+  render(`<section>
+    <div class="grade" style="color:var(${c})">${g}</div>
+    <div class="panel">${led(ledTime(ms), a<0.7?'':'red')}<div class="plabel">seu tempo · alvo ${soloTarget/1000}s</div></div>
+    <p class="center">Você parou <strong style="color:var(--fg)">${a.toFixed(2)}s ${err>0?'depois':'antes'}</strong> do tempo.</p>
+    <button class="btn" id="again">Novo tempo</button>
+    <button class="ghost" id="same">Repetir ${soloTarget/1000}s</button>
+    ${statsHtml()}
+  </section>`, 'solo-res');
+  $('#again').onclick=()=>solo(true); $('#same').onclick=()=>solo(false);
+}
+function statsHtml(){
+  if(!soloHist.length) return '';
+  const errs = soloHist.map(h=>Math.abs(h.e)/1000);
+  const n = Math.min(10,errs.length), avg = errs.slice(0,n).reduce((s,x)=>s+x,0)/n;
+  return `<div class="box"><h2>Seu treino</h2><div class="stats">
+    <div><b>${soloHist.length}</b><span>tentativas</span></div>
+    <div><b>${Math.min(...errs).toFixed(2)}s</b><span>melhor erro</span></div>
+    <div><b>${avg.toFixed(2)}s</b><span>erro médio (últ. ${n})</span></div></div></div>`;
+}
+
+/* ---------- boot ---------- */
+home();
+</script>
+</body>
+</html>
